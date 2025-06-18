@@ -1,17 +1,19 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, ExternalLink, Copy, Filter } from 'lucide-react';
+import { FaSearch, FaExternalLinkAlt, FaCopy, FaFilter, FaBars, FaTimes } from 'react-icons/fa';
 import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const TransactionExplorer = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const { toast } = useToast();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Mock transaction data
   const transactions = [
@@ -130,194 +132,258 @@ const TransactionExplorer = () => {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'transfer': return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
-      case 'delegate': return 'bg-green-500/20 text-green-300 border-green-500/30';
-      case 'undelegate': return 'bg-orange-500/20 text-orange-300 border-orange-500/30';
-      case 'vote': return 'bg-purple-500/20 text-purple-300 border-purple-500/30';
-      default: return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
+      case 'transfer': return 'bg-[hsl(var(--badge-transfer-bg))] text-[hsl(var(--badge-transfer-fg))] border-[hsl(var(--primary))/30]';
+      case 'delegate': return 'bg-[hsl(var(--badge-delegate-bg))] text-[hsl(var(--badge-delegate-fg))] border-[hsl(var(--accent))/30]';
+      case 'undelegate': return 'bg-[hsl(var(--badge-undelegate-bg))] text-[hsl(var(--badge-undelegate-fg))] border-[hsl(var(--destructive))/30]';
+      case 'vote': return 'bg-[hsl(var(--badge-vote-bg))] text-[hsl(var(--badge-vote-fg))] border-[hsl(var(--secondary))/30]';
+      default: return 'bg-muted/20 text-muted-foreground border-border';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'success': return 'bg-green-500/20 text-green-300 border-green-500/30';
-      case 'failed': return 'bg-red-500/20 text-red-300 border-red-500/30';
-      case 'pending': return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
-      default: return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
+      case 'success': return 'bg-[hsl(var(--badge-success-bg))] text-[hsl(var(--badge-success-fg))] border-[hsl(var(--primary))/30]';
+      case 'failed': return 'bg-[hsl(var(--badge-failed-bg))] text-[hsl(var(--badge-failed-fg))] border-[hsl(var(--destructive))/30]';
+      case 'pending': return 'bg-[hsl(var(--badge-pending-bg))] text-[hsl(var(--badge-pending-fg))] border-[hsl(var(--secondary))/30]';
+      default: return 'bg-muted/20 text-muted-foreground border-border';
     }
   };
 
+  const toggleSidebar = () => setSidebarOpen((open) => !open);
+  const handleNavClick = (id) => {
+    // Implement the logic to handle navigation click
+    console.log(`Navigating to ${id}`);
+    setSidebarOpen(false); // close sidebar on mobile after navigation
+  };
+
   return (
-    <div className="space-y-8">
-      {/* Search and Filters */}
-      <Card className="bg-black/40 border-gray-700/50">
-        <CardHeader>
-          <CardTitle className="text-white">Transaction Explorer</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Search by hash, address, or block..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-gray-800 border-gray-600 text-white"
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-gray-400" />
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white text-sm"
-              >
-                <option value="all">All Types</option>
-                <option value="transfer">Transfer</option>
-                <option value="delegate">Delegate</option>
-                <option value="undelegate">Undelegate</option>
-                <option value="vote">Vote</option>
-              </select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Transactions */}
-        <div className="lg:col-span-2">
-          <Card className="bg-black/40 border-gray-700/50">
-            <CardHeader>
-              <CardTitle className="text-white">Recent Transactions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-gray-700">
-                      <TableHead className="text-gray-300">Hash</TableHead>
-                      <TableHead className="text-gray-300">Type</TableHead>
-                      <TableHead className="text-gray-300">Amount</TableHead>
-                      <TableHead className="text-gray-300">Fee</TableHead>
-                      <TableHead className="text-gray-300">Status</TableHead>
-                      <TableHead className="text-gray-300">Time</TableHead>
-                      <TableHead className="text-gray-300"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredTransactions.map((tx) => (
-                      <TableRow key={tx.hash} className="border-gray-700 hover:bg-gray-800/50">
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-blue-400 font-mono text-sm">
-                              {formatHash(tx.hash)}
-                            </span>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => copyToClipboard(tx.hash)}
-                              className="h-6 w-6 p-0 hover:bg-gray-700"
-                            >
-                              <Copy className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getTypeColor(tx.type)}>
-                            {tx.type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-white font-medium">
-                          {tx.amount.toLocaleString()} ATOM
-                        </TableCell>
-                        <TableCell className="text-gray-300">
-                          {tx.fee} ATOM
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(tx.status)}>
-                            {tx.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-gray-400">
-                          {formatTime(tx.timestamp)}
-                        </TableCell>
-                        <TableCell>
-                          <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
-                            <ExternalLink className="w-3 h-3" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+    <div className="space-y-8 px-4">
+      {/* Mobile Header with Hamburger */}
+      <div className="lg:hidden ...">
+        {/* ...logo... */}
+        <button onClick={toggleSidebar} aria-label="Toggle menu">
+          {sidebarOpen ? <FaTimes /> : <FaBars />}
+        </button>
+      </div>
+      <div className="flex">
+        {/* Sidebar */}
+        <div className={`
+          fixed lg:static ... transition-transform
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0
+        `}>
+          {/* ...nav buttons... */}
+          {/* Add your navigation buttons here */}
         </div>
-
-        {/* Recent Blocks */}
-        <div>
-          <Card className="bg-black/40 border-gray-700/50">
+        {/* Overlay */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        )}
+        {/* Main Content */}
+        <div className="flex-1 ...">
+          {/* Search and Filters */}
+          <Card className="bg-card border border-border mx-auto w-full max-w-md text-center">
             <CardHeader>
-              <CardTitle className="text-white">Recent Blocks</CardTitle>
+              <CardTitle className="text-foreground">Transaction Explorer</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {blocks.map((block) => (
-                  <div
-                    key={block.height}
-                    className="p-4 rounded-lg bg-gray-800/50 border border-gray-700/50 hover:border-gray-600/50 transition-colors"
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <div className="text-blue-400 font-bold">#{block.height.toLocaleString()}</div>
-                        <div className="text-xs text-gray-400 font-mono">
-                          {formatHash(block.hash)}
-                        </div>
+              <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                <div className="relative flex-1">
+                  <FaSearch className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by hash, address, or block..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8 bg-input border-border text-foreground"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <FaFilter className="w-4 h-4 text-muted-foreground" />
+                  <Select onValueChange={setFilterType} value={filterType}>
+                    <SelectTrigger className="w-[180px] bg-input border-border text-foreground">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border-border text-popover-foreground">
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="transfer">Transfer</SelectItem>
+                      <SelectItem value="delegate">Delegate</SelectItem>
+                      <SelectItem value="undelegate">Undelegate</SelectItem>
+                      <SelectItem value="vote">Vote</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Recent Transactions */}
+            <div className="lg:col-span-2">
+              <Tabs defaultValue="transactions" className="space-y-6">
+                <TabsList className="grid w-full grid-cols-2 lg:grid-cols-2 bg-muted/40">
+                  <TabsTrigger value="transactions" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Transactions</TabsTrigger>
+                  <TabsTrigger value="blocks" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Blocks</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="transactions">
+                  <Card className="bg-card border border-border">
+                    <CardHeader>
+                      <CardTitle className="text-foreground">Recent Transactions</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <Table className="min-w-full leading-normal">
+                          <thead>
+                            <tr>
+                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tx Hash</TableHead>
+                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Block</TableHead>
+                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Time</TableHead>
+                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Type</TableHead>
+                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Amount</TableHead>
+                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">From</TableHead>
+                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">To</TableHead>
+                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fee</TableHead>
+                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</TableHead>
+                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</TableHead>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredTransactions.map((tx, index) => (
+                              <TableRow key={index} className="border-b border-muted last:border-b-0">
+                                <TableCell className="px-5 py-5 text-sm font-mono text-primary">
+                                  {formatHash(tx.hash)}
+                                </TableCell>
+                                <TableCell className="px-5 py-5 text-sm text-foreground">{tx.block}</TableCell>
+                                <TableCell className="px-5 py-5 text-sm text-muted-foreground">{formatTime(tx.timestamp)}</TableCell>
+                                <TableCell className="px-5 py-5 text-sm">
+                                  <Badge className={getTypeColor(tx.type)}>{tx.type}</Badge>
+                                </TableCell>
+                                <TableCell className="px-5 py-5 text-sm text-foreground">{tx.amount.toLocaleString()} ATOM</TableCell>
+                                <TableCell className="px-5 py-5 text-sm font-mono text-muted-foreground">
+                                  {tx.from.substring(0, 8)}...
+                                </TableCell>
+                                <TableCell className="px-5 py-5 text-sm font-mono text-muted-foreground">
+                                  {tx.to.substring(0, 8)}...
+                                </TableCell>
+                                <TableCell className="px-5 py-5 text-sm text-foreground">{tx.fee} ATOM</TableCell>
+                                <TableCell className="px-5 py-5 text-sm">
+                                  <Badge className={getStatusColor(tx.status)}>{tx.status}</Badge>
+                                </TableCell>
+                                <TableCell className="px-5 py-5 text-sm">
+                                  <div className="flex items-center space-x-2">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      onClick={() => copyToClipboard(tx.hash)}
+                                      className="text-muted-foreground hover:text-primary"
+                                    >
+                                      <FaCopy className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      onClick={() => window.open(`https://explorer.example.com/tx/${tx.hash}`, '_blank')}
+                                      className="text-muted-foreground hover:text-primary"
+                                    >
+                                      <FaExternalLinkAlt className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                            {filteredTransactions.length === 0 && (
+                              <TableRow>
+                                <TableCell colSpan={10} className="px-5 py-5 text-center text-muted-foreground">
+                                  No transactions found matching your criteria.
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </tbody>
+                        </Table>
                       </div>
-                      <Badge variant="secondary" className="bg-purple-500/20 text-purple-300">
-                        {block.txCount} txs
-                      </Badge>
-                    </div>
-                    <div className="text-sm text-gray-300 mb-1">
-                      Proposer: {block.proposer}
-                    </div>
-                    <div className="flex justify-between text-xs text-gray-400">
-                      <span>{formatTime(block.timestamp)}</span>
-                      <span>{block.size}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
 
-          {/* Transaction Stats */}
-          <Card className="bg-black/40 border-gray-700/50 mt-6">
-            <CardHeader>
-              <CardTitle className="text-white">Transaction Stats</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Total Transactions</span>
-                  <span className="text-white font-medium">15,234,567</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Avg Block Time</span>
-                  <span className="text-white font-medium">6.2s</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Network Fee</span>
-                  <span className="text-white font-medium">0.025 ATOM</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Success Rate</span>
-                  <span className="text-green-400 font-medium">99.2%</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                <TabsContent value="blocks">
+                  <Card className="bg-card border border-border">
+                    <CardHeader>
+                      <CardTitle className="text-foreground">Recent Blocks</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <Table className="min-w-full leading-normal">
+                          <thead>
+                            <tr>
+                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Height</TableHead>
+                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Hash</TableHead>
+                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Time</TableHead>
+                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tx Count</TableHead>
+                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Proposer</TableHead>
+                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Size</TableHead>
+                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</TableHead>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {blocks.map((block, index) => (
+                              <TableRow key={index} className="border-b border-muted last:border-b-0">
+                                <TableCell className="px-5 py-5 text-sm font-medium text-primary">{block.height}</TableCell>
+                                <TableCell className="px-5 py-5 text-sm font-mono text-muted-foreground">
+                                  {formatHash(block.hash)}
+                                </TableCell>
+                                <TableCell className="px-5 py-5 text-sm text-muted-foreground">{formatTime(block.timestamp)}</TableCell>
+                                <TableCell className="px-5 py-5 text-sm text-foreground">{block.txCount}</TableCell>
+                                <TableCell className="px-5 py-5 text-sm text-foreground">{block.proposer}</TableCell>
+                                <TableCell className="px-5 py-5 text-sm text-foreground">{block.size}</TableCell>
+                                <TableCell className="px-5 py-5 text-sm">
+                                  <div className="flex items-center space-x-2">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      onClick={() => copyToClipboard(block.hash)}
+                                      className="text-muted-foreground hover:text-primary"
+                                    >
+                                      <FaCopy className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      onClick={() => window.open(`https://explorer.example.com/block/${block.hash}`, '_blank')}
+                                      className="text-muted-foreground hover:text-primary"
+                                    >
+                                      <FaExternalLinkAlt className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                            {blocks.length === 0 && (
+                              <TableRow>
+                                <TableCell colSpan={7} className="px-5 py-5 text-center text-muted-foreground">
+                                  No blocks found.
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </tbody>
+                        </Table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            {/* Transaction Details (Placeholder) */}
+            <Card className="bg-card border border-border h-fit">
+              <CardHeader>
+                <CardTitle className="text-foreground">Transaction Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Select a transaction to view its details.</p>
+                {/* Future: Display selected transaction details here */}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

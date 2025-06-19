@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -8,106 +8,113 @@ import { FaSearch, FaExternalLinkAlt, FaCopy, FaFilter, FaBars, FaTimes } from '
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import usePolkadot from '@/hooks/use-polkadot';
+import { ApiPromise } from '@polkadot/api';
 
 const TransactionExplorer = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const { toast } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { api, isConnected, loading: apiLoading, error: apiError } = usePolkadot();
+  const [extrinsics, setExtrinsics] = useState<any[]>([]);
+  const [blocks, setBlocks] = useState<any[]>([]);
+  const [selectedTx, setSelectedTx] = useState<any>(null);
+  const [txDetails, setTxDetails] = useState<any>(null);
+  const [txLoading, setTxLoading] = useState(false);
+  const [txError, setTxError] = useState<string | null>(null);
 
-  // Mock transaction data
-  const transactions = [
-    {
-      hash: '0x1a2b3c4d5e6f7890abcdef1234567890abcdef1234567890abcdef1234567890',
-      block: 15234567,
-      timestamp: new Date(Date.now() - 300000),
-      from: 'cosmos1abc...def123',
-      to: 'cosmos1xyz...789abc',
-      amount: 1250.50,
-      fee: 0.025,
-      type: 'transfer',
-      status: 'success'
-    },
-    {
-      hash: '0x2b3c4d5e6f7890abcdef1234567890abcdef1234567890abcdef1234567890ab',
-      block: 15234566,
-      timestamp: new Date(Date.now() - 450000),
-      from: 'cosmos1def...abc456',
-      to: 'cosmos1uvw...456def',
-      amount: 75.25,
-      fee: 0.015,
-      type: 'delegate',
-      status: 'success'
-    },
-    {
-      hash: '0x3c4d5e6f7890abcdef1234567890abcdef1234567890abcdef1234567890abcd',
-      block: 15234565,
-      timestamp: new Date(Date.now() - 600000),
-      from: 'cosmos1ghi...789ghi',
-      to: 'cosmos1rst...012rst',
-      amount: 2500.00,
-      fee: 0.030,
-      type: 'transfer',
-      status: 'success'
-    },
-    {
-      hash: '0x4d5e6f7890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-      block: 15234564,
-      timestamp: new Date(Date.now() - 750000),
-      from: 'cosmos1jkl...345jkl',
-      to: 'cosmos1mno...678mno',
-      amount: 150.75,
-      fee: 0.020,
-      type: 'vote',
-      status: 'failed'
-    },
-    {
-      hash: '0x5e6f7890abcdef1234567890abcdef1234567890abcdef1234567890abcdefab',
-      block: 15234563,
-      timestamp: new Date(Date.now() - 900000),
-      from: 'cosmos1pqr...901pqr',
-      to: 'cosmos1stu...234stu',
-      amount: 500.00,
-      fee: 0.025,
-      type: 'undelegate',
-      status: 'success'
-    }
-  ];
+  // Fetch latest 10 blocks and their extrinsics
+  useEffect(() => {
+    const fetchExtrinsics = async () => {
+      if (!api || !isConnected) return;
+      try {
+        const latestHeader = await api.rpc.chain.getHeader();
+        const latestBlockNumber = Number(latestHeader.number.toBigInt());
+        const blockNumbers = Array.from({ length: 10 }, (_, i) => latestBlockNumber - i);
+        const blockHashes = await Promise.all(blockNumbers.map(n => api.rpc.chain.getBlockHash(n)));
+        const blockData = await Promise.all(blockHashes.map(hash => api.rpc.chain.getBlock(hash)));
+        const extrinsicsList: any[] = [];
+        const blocksList: any[] = [];
+        for (let i = 0; i < blockData.length; i++) {
+          const block = blockData[i];
+          const blockHash = blockHashes[i].toHex();
+          const blockNumber = blockNumbers[i];
+          const timestampExtrinsic = block.block.extrinsics.find((ex: any) => ex.method.section === 'timestamp');
+          let timestamp = null;
+          if (timestampExtrinsic) {
+            try {
+              timestamp = Number(timestampExtrinsic.method.args[0].toString());
+            } catch {}
+          }
+          blocksList.push({
+            height: blockNumber,
+            hash: blockHash,
+            timestamp: timestamp ? new Date(timestamp) : null,
+            txCount: block.block.extrinsics.length,
+            proposer: '',
+            size: '',
+          });
+          block.block.extrinsics.forEach((ex: any, idx: number) => {
+            extrinsicsList.push({
+              hash: ex.hash.toHex(),
+              block: blockNumber,
+              blockHash,
+              index: idx,
+              method: `${ex.method.section}.${ex.method.method}`,
+              signer: ex.signer?.toString() || '',
+              args: ex.method.args.map((a: any) => a.toString()),
+              isSigned: ex.isSigned,
+              nonce: ex.nonce?.toString() || '',
+              tip: ex.tip?.toString() || '',
+              timestamp: timestamp ? new Date(timestamp) : null,
+            });
+          });
+        }
+        setExtrinsics(extrinsicsList);
+        setBlocks(blocksList);
+      } catch (err) {
+        setExtrinsics([]);
+        setBlocks([]);
+      }
+    };
+    fetchExtrinsics();
+  }, [api, isConnected]);
 
-  const blocks = [
-    {
-      height: 15234567,
-      hash: '0xabc123...def789',
-      timestamp: new Date(Date.now() - 180000),
-      txCount: 45,
-      proposer: 'Cosmos Hub Validator',
-      size: '2.4 KB'
-    },
-    {
-      height: 15234566,
-      hash: '0xdef456...abc012',
-      timestamp: new Date(Date.now() - 360000),
-      txCount: 32,
-      proposer: 'Secure Staking Co.',
-      size: '1.8 KB'
-    },
-    {
-      height: 15234565,
-      hash: '0x789abc...345def',
-      timestamp: new Date(Date.now() - 540000),
-      txCount: 67,
-      proposer: 'Decentralized Pool',
-      size: '3.2 KB'
-    }
-  ];
-
-  const filteredTransactions = transactions.filter(tx => {
-    const matchesSearch = tx.hash.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         tx.from.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         tx.to.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterType === 'all' || tx.type === filterType;
+  // Filter extrinsics by search and type
+  const filteredExtrinsics = extrinsics.filter((ex) => {
+    const matchesSearch =
+      ex.hash.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ex.signer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ex.block.toString().includes(searchTerm);
+    const matchesFilter = filterType === 'all' || ex.method.toLowerCase().includes(filterType);
     return matchesSearch && matchesFilter;
   });
+
+  // Fetch transaction details for selected extrinsic
+  useEffect(() => {
+    const fetchTxDetails = async () => {
+      if (!api || !selectedTx) return;
+      setTxLoading(true);
+      setTxError(null);
+      try {
+        // Get block and extrinsic details
+        const block = await api.rpc.chain.getBlock(selectedTx.blockHash);
+        const extrinsic = block.block.extrinsics[selectedTx.index];
+        setTxDetails(extrinsic.toHuman());
+      } catch (err: any) {
+        setTxError(err.message || 'Failed to fetch transaction details');
+        setTxDetails(null);
+      } finally {
+        setTxLoading(false);
+      }
+    };
+    if (isConnected && selectedTx) {
+      fetchTxDetails();
+    } else {
+      setTxDetails(null);
+    }
+  }, [api, isConnected, selectedTx]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -248,33 +255,38 @@ const TransactionExplorer = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {filteredTransactions.map((tx, index) => (
-                              <TableRow key={index} className="border-b border-muted last:border-b-0">
+                            {filteredExtrinsics.map((tx, index) => (
+                              <TableRow key={index} className="border-b border-muted last:border-b-0" onClick={() => setSelectedTx(tx)} style={{ cursor: 'pointer', background: selectedTx?.hash === tx.hash ? 'rgba(0,0,0,0.05)' : undefined }}>
                                 <TableCell className="px-5 py-5 text-sm font-mono text-primary">
                                   {formatHash(tx.hash)}
                                 </TableCell>
                                 <TableCell className="px-5 py-5 text-sm text-foreground">{tx.block}</TableCell>
                                 <TableCell className="px-5 py-5 text-sm text-muted-foreground">{formatTime(tx.timestamp)}</TableCell>
                                 <TableCell className="px-5 py-5 text-sm">
-                                  <Badge className={getTypeColor(tx.type)}>{tx.type}</Badge>
+                                  <Badge className={getTypeColor(tx.method.split('.')[0])}>{tx.method.split('.')[0]}</Badge>
                                 </TableCell>
-                                <TableCell className="px-5 py-5 text-sm text-foreground">{tx.amount.toLocaleString()} ATOM</TableCell>
+<TableCell className="...">
+  {(tx.method === 'balances.transfer' || tx.method === 'balances.transferKeepAlive') ? `${tx.args[1]} DOT` : '—'}
+</TableCell>
                                 <TableCell className="px-5 py-5 text-sm font-mono text-muted-foreground">
-                                  {tx.from.substring(0, 8)}...
+                                  {tx.signer.substring(0, 8)}...
                                 </TableCell>
                                 <TableCell className="px-5 py-5 text-sm font-mono text-muted-foreground">
-                                  {tx.to.substring(0, 8)}...
+                                  {tx.signer.substring(0, 8)}...
                                 </TableCell>
-                                <TableCell className="px-5 py-5 text-sm text-foreground">{tx.fee} ATOM</TableCell>
+                                <TableCell className="px-5 py-5 text-sm text-foreground">{tx.tip} ATOM</TableCell>
                                 <TableCell className="px-5 py-5 text-sm">
-                                  <Badge className={getStatusColor(tx.status)}>{tx.status}</Badge>
+                                  <Badge className={getStatusColor(tx.isSigned ? 'success' : 'failed')}>{tx.isSigned ? 'Signed' : 'Unsigned'}</Badge>
                                 </TableCell>
                                 <TableCell className="px-5 py-5 text-sm">
                                   <div className="flex items-center space-x-2">
                                     <Button 
                                       variant="ghost" 
                                       size="icon" 
-                                      onClick={() => copyToClipboard(tx.hash)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        copyToClipboard(tx.hash);
+                                      }}
                                       className="text-muted-foreground hover:text-primary"
                                     >
                                       <FaCopy className="h-4 w-4" />
@@ -282,7 +294,10 @@ const TransactionExplorer = () => {
                                     <Button 
                                       variant="ghost" 
                                       size="icon" 
-                                      onClick={() => window.open(`https://explorer.example.com/tx/${tx.hash}`, '_blank')}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        window.open(`https://explorer.example.com/tx/${tx.hash}`, '_blank');
+                                      }}
                                       className="text-muted-foreground hover:text-primary"
                                     >
                                       <FaExternalLinkAlt className="h-4 w-4" />
@@ -291,7 +306,7 @@ const TransactionExplorer = () => {
                                 </TableCell>
                               </TableRow>
                             ))}
-                            {filteredTransactions.length === 0 && (
+                            {filteredExtrinsics.length === 0 && (
                               <TableRow>
                                 <TableCell colSpan={10} className="px-5 py-5 text-center text-muted-foreground">
                                   No transactions found matching your criteria.
@@ -340,7 +355,10 @@ const TransactionExplorer = () => {
                                     <Button 
                                       variant="ghost" 
                                       size="icon" 
-                                      onClick={() => copyToClipboard(block.hash)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        copyToClipboard(block.hash);
+                                      }}
                                       className="text-muted-foreground hover:text-primary"
                                     >
                                       <FaCopy className="h-4 w-4" />
@@ -348,7 +366,10 @@ const TransactionExplorer = () => {
                                     <Button 
                                       variant="ghost" 
                                       size="icon" 
-                                      onClick={() => window.open(`https://explorer.example.com/block/${block.hash}`, '_blank')}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        window.open(`https://explorer.example.com/block/${block.hash}`, '_blank');
+                                      }}
                                       className="text-muted-foreground hover:text-primary"
                                     >
                                       <FaExternalLinkAlt className="h-4 w-4" />
@@ -373,14 +394,33 @@ const TransactionExplorer = () => {
               </Tabs>
             </div>
 
-            {/* Transaction Details (Placeholder) */}
-            <Card className="bg-card border border-border h-fit">
+            {/* Transaction Details (Polkadot or Mock) */}
+            <Card className="bg-card border border-border mt-8">
               <CardHeader>
                 <CardTitle className="text-foreground">Transaction Details</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Select a transaction to view its details.</p>
-                {/* Future: Display selected transaction details here */}
+                {selectedTx ? (
+                  apiLoading ? (
+                    <p className="text-muted-foreground">Connecting to Polkadot network...</p>
+                  ) : txLoading ? (
+                    <p className="text-muted-foreground">Loading transaction details...</p>
+                  ) : txError ? (
+                    <p className="text-destructive">{txError}</p>
+                  ) : txDetails ? (
+                    <pre className="text-xs bg-muted p-2 rounded overflow-x-auto max-h-64">{JSON.stringify(txDetails, null, 2)}</pre>
+                  ) : (
+                    <>
+                      <div className="mb-2"><span className="font-semibold">Hash:</span> {selectedTx.hash}</div>
+                      <div className="mb-2"><span className="font-semibold">Block:</span> {selectedTx.block}</div>
+                      <div className="mb-2"><span className="font-semibold">Method:</span> {selectedTx.method}</div>
+                      <div className="mb-2"><span className="font-semibold">Signer:</span> {selectedTx.signer}</div>
+                      <div className="mb-2"><span className="font-semibold">Args:</span> {selectedTx.args.join(', ')}</div>
+                    </>
+                  )
+                ) : (
+                  <p className="text-muted-foreground">Select a transaction to view its details.</p>
+                )}
               </CardContent>
             </Card>
           </div>

@@ -151,17 +151,17 @@ const WalletConnection = () => {
         <Button
           ref={buttonRef}
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="bg-card/20 border border-border hover:border-primary text-foreground"
+          className="bg-card/20 border border-border hover:border-primary text-foreground min-w-0"
         >
-          <div className="flex items-center space-x-3">
-            <div className="w-2 h-2 bg-primary rounded-full"></div>
-            <div className="text-left">
-              <div className="text-sm font-medium text-foreground">{formatAddress(selectedAccount.address)}</div>
-              <div className="text-xs text-muted-foreground">
+          <div className="flex items-center space-x-2 min-w-0">
+            <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
+            <div className="text-left min-w-0">
+              <div className="text-sm font-medium text-foreground truncate max-w-[80px] md:max-w-[120px]">{formatAddress(selectedAccount.address)}</div>
+              <div className="text-xs text-muted-foreground truncate max-w-[80px] md:max-w-[120px]">
                 {balance ? `${balance} ATOM` : 'Fetching balance...'}
               </div>
             </div>
-            <FaChevronDown className="w-4 h-4 text-muted-foreground" />
+            <FaChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           </div>
         </Button>
       </div>

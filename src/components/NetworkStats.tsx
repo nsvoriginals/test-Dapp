@@ -4,37 +4,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { FaChartLine, FaUsers, FaClock, FaDollarSign, FaShieldAlt } from 'react-icons/fa';
 import { FaBolt, FaWallet } from 'react-icons/fa6';
 import { cn } from '@/lib/utils';
-import { useMemo } from 'react';
-
-// Mock data moved outside component
-const networkData = {
-  validatorsOnline: 178,
-  totalValidators: 200,
-  stakingAPR: 12.5,
-  avgBlockTime: 6.2,
-  totalTransactions: 15234567,
-  totalValueLocked: 2340000000,
-  networkHealth: 99.8,
-  activeAddresses: 45231
-};
-
-const chartData = [
-  { time: '00:00', transactions: 1200, validators: 175 },
-  { time: '04:00', transactions: 800, validators: 178 },
-  { time: '08:00', transactions: 2100, validators: 180 },
-  { time: '12:00', transactions: 3400, validators: 179 },
-  { time: '16:00', transactions: 2800, validators: 177 },
-  { time: '20:00', transactions: 1900, validators: 178 },
-];
-
-const stakingData = [
-  { period: 'Jan', staked: 180000000, rewards: 15000000 },
-  { period: 'Feb', staked: 195000000, rewards: 16250000 },
-  { period: 'Mar', staked: 210000000, rewards: 17500000 },
-  { period: 'Apr', staked: 225000000, rewards: 18750000 },
-  { period: 'May', staked: 240000000, rewards: 20000000 },
-  { period: 'Jun', staked: 258000000, rewards: 21500000 },
-];
+import { useEffect, useState, useMemo } from 'react';
+import usePolkadot from '@/hooks/use-polkadot';
 
 const formatNumber = (num: number) => {
   if (num >= 1e9) return `$${(num / 1e9).toFixed(1)}B`;
@@ -44,13 +15,32 @@ const formatNumber = (num: number) => {
 };
 
 const NetworkStats = () => {
-  // Memoized chart data (if derived from props/state in future)
-  const memoChartData = useMemo(() => chartData, []);
-  const memoStakingData = useMemo(() => stakingData, []);
+  const validatorsOnline = 297;
+  const totalValidators = 300;
+  const stakingAPR = 13.2;
+  const avgBlockTime = 6.1;
+  const totalTransactions = 1234567;
+  const totalValueLocked = 987654321;
+  const networkHealth = 100;
+  const activeAddresses = 45678;
+  const chartData = [
+    { time: '10:00', transactions: 120, validators: 297 },
+    { time: '10:20', transactions: 140, validators: 297 },
+    { time: '10:40', transactions: 110, validators: 297 },
+    { time: '11:00', transactions: 160, validators: 297 },
+    { time: '11:20', transactions: 130, validators: 297 },
+    { time: '11:40', transactions: 150, validators: 297 },
+  ];
+  const stakingData = [
+    { period: 'Jan', staked: 100000, rewards: 1200 },
+    { period: 'Feb', staked: 120000, rewards: 1300 },
+    { period: 'Mar', staked: 140000, rewards: 1400 },
+    { period: 'Apr', staked: 160000, rewards: 1500 },
+  ];
 
   const getStatusColor = (value: number, type: 'validators' | 'health' | 'apr') => {
     if (type === 'validators') {
-      const percentage = (value / networkData.totalValidators) * 100;
+      const percentage = (value / totalValidators) * 100;
       if (percentage >= 90) return 'bg-green-500/20 text-green-500 border-green-500/30';
       if (percentage >= 75) return 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30';
       return 'bg-red-500/20 text-red-500 border-red-500/30';
@@ -79,10 +69,10 @@ const NetworkStats = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              {networkData.validatorsOnline}/{networkData.totalValidators}
+              {validatorsOnline}/{totalValidators}
             </div>
-            <Badge className={cn("mt-2", getStatusColor(networkData.validatorsOnline, 'validators'))}>
-              {((networkData.validatorsOnline / networkData.totalValidators) * 100).toFixed(1)}% Active
+            <Badge className={cn("mt-2", getStatusColor(validatorsOnline, 'validators'))}>
+              {((validatorsOnline / totalValidators) * 100).toFixed(1)}% Active
             </Badge>
           </CardContent>
         </Card>
@@ -92,8 +82,8 @@ const NetworkStats = () => {
             <FaChartLine className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{networkData.stakingAPR}%</div>
-            <Badge className={cn("mt-2", getStatusColor(networkData.stakingAPR, 'apr'))}>
+            <div className="text-2xl font-bold text-foreground">{stakingAPR}%</div>
+            <Badge className={cn("mt-2", getStatusColor(stakingAPR, 'apr'))}>
               Current Rate
             </Badge>
           </CardContent>
@@ -104,7 +94,7 @@ const NetworkStats = () => {
             <FaClock className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{networkData.avgBlockTime}s</div>
+            <div className="text-2xl font-bold text-foreground">{avgBlockTime}s</div>
             <p className="text-xs text-muted-foreground mt-2">Average Block Time</p>
           </CardContent>
         </Card>
@@ -114,7 +104,7 @@ const NetworkStats = () => {
             <FaDollarSign className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{formatNumber(networkData.totalValueLocked)}</div>
+            <div className="text-2xl font-bold text-foreground">{formatNumber(totalValueLocked)}</div>
             <p className="text-xs text-muted-foreground mt-2">TVL in USD</p>
           </CardContent>
         </Card>
@@ -131,7 +121,7 @@ const NetworkStats = () => {
           <CardContent>
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={memoChartData}>
+                <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
                   <XAxis dataKey="time" stroke="hsl(var(--muted-foreground))" />
                   <YAxis yAxisId="left" stroke="hsl(var(--primary))" />
@@ -170,7 +160,7 @@ const NetworkStats = () => {
           <CardContent>
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={memoStakingData}>
+                <AreaChart data={stakingData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
                   <XAxis dataKey="period" stroke="hsl(var(--muted-foreground))" />
                   <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={formatNumber} />
@@ -224,14 +214,14 @@ const NetworkStats = () => {
             <CardTitle className="text-foreground text-lg">Network Health</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-primary mb-2">{networkData.networkHealth}%</div>
-            <Badge className={cn("mb-2", getStatusColor(networkData.networkHealth, 'health'))}>
+            <div className="text-3xl font-bold text-primary mb-2">{networkHealth}%</div>
+            <Badge className={cn("mb-2", getStatusColor(networkHealth, 'health'))}>
               System Status
             </Badge>
             <div className="w-full bg-muted rounded-full h-2">
               <div
                 className="bg-primary h-2 rounded-full transition-all duration-500"
-                style={{ width: `${networkData.networkHealth}%` }}
+                style={{ width: `${networkHealth}%` }}
               ></div>
             </div>
             <p className="text-sm text-muted-foreground mt-2">Uptime last 30 days</p>
@@ -243,7 +233,7 @@ const NetworkStats = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-primary mb-2">
-              {networkData.totalTransactions.toLocaleString()}
+              {totalTransactions.toLocaleString()}
             </div>
             <p className="text-sm text-muted-foreground">Since genesis block</p>
           </CardContent>
@@ -254,7 +244,7 @@ const NetworkStats = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-primary mb-2">
-              {networkData.activeAddresses.toLocaleString()}
+              {activeAddresses.toLocaleString()}
             </div>
             <p className="text-sm text-muted-foreground">Unique active addresses</p>
           </CardContent>

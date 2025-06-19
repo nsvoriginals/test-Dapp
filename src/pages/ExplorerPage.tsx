@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaChartLine, FaShieldAlt, FaExchangeAlt, FaRocket, FaSearch } from 'react-icons/fa';
+import Header from '@/components/Header';
 
 const navItems = [
   { id: 'blocks', label: 'Blocks', icon: FaChartLine },
@@ -15,6 +16,7 @@ const ExplorerPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Header />
       {/* Navigation Pills */}
       <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/40">
         <div className="container mx-auto px-6">

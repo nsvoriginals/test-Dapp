@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import WalletConnection from './WalletConnection';
 import { useTheme } from "next-themes";
 import { FaSun, FaMoon } from "react-icons/fa";
+import { Link } from 'react-router-dom';
 
 const Header = () => {
   const { theme, setTheme } = useTheme();
@@ -15,10 +16,10 @@ const Header = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 md:py-4">
         <div className="flex flex-row items-center justify-between w-full gap-x-4">
           {/* Logo */}
-          <div className="flex items-center gap-x-2 min-w-0">
-            <img src="/logo.svg" alt="XORION Logo" className="w-7 h-7 md:w-10 md:h-10 flex-shrink-0" />
-            <span className="text-lg md:text-2xl font-bold text-foreground whitespace-nowrap">XORION</span>
-          </div>
+          <Link to="/" className="flex items-center gap-x-2 min-w-0 group">
+            <img src="/logo.svg" alt="XORION Logo" className="w-7 h-7 md:w-10 md:h-10 flex-shrink-0 transition-transform group-hover:scale-105" />
+            <span className="text-lg md:text-2xl font-bold text-foreground whitespace-nowrap group-hover:text-primary transition-colors">XORION</span>
+          </Link>
 
           {/* Theme Toggle */}
           <div className="flex flex-row items-center gap-x-2 min-w-0">

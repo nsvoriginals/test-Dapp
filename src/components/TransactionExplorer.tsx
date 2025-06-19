@@ -166,12 +166,7 @@ const TransactionExplorer = () => {
   return (
     <div className="space-y-8 px-4">
       {/* Mobile Header with Hamburger */}
-      <div className="lg:hidden ...">
-        {/* ...logo... */}
-        <button onClick={toggleSidebar} aria-label="Toggle menu">
-          {sidebarOpen ? <FaTimes /> : <FaBars />}
-        </button>
-      </div>
+     
       <div className="flex">
         {/* Sidebar */}
         <div className={`
@@ -189,7 +184,7 @@ const TransactionExplorer = () => {
         {/* Main Content */}
         <div className="flex-1 ...">
           {/* Search and Filters */}
-          <Card className="bg-card border border-border mx-auto w-full max-w-md text-center">
+          <Card className="bg-card border border-border mb-10 mx-auto w-full max-w-md text-center">
             <CardHeader>
               <CardTitle className="text-foreground">Transaction Explorer</CardTitle>
             </CardHeader>

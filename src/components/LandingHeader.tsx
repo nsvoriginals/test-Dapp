@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaChartLine, FaShieldAlt, FaExchangeAlt, FaRocket, FaSun, FaMoon } from 'react-icons/fa';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from "next-themes";
 
 const navItems = [
@@ -30,15 +30,15 @@ const LandingHeader = () => {
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo and Brand */}
-          <div className="flex items-center space-x-4">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+          <Link to="/" className="flex items-center space-x-4 group">
+            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center transition-transform group-hover:scale-105">
               <FaShieldAlt className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">XORION</h1>
+              <h1 className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">XORION</h1>
               <p className="text-sm text-muted-foreground">Blockchain Explorer</p>
             </div>
-          </div>
+          </Link>
 
           {/* Navigation Pills */}
           <div className="hidden md:flex items-center space-x-2 bg-muted/50 p-1 rounded-full">

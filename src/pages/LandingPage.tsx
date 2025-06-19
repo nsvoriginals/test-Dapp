@@ -66,7 +66,7 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Navbar */}
-      <section className="py-4 lg:py-8 fixed w-full top-0 z-50 bg-background/80 backdrop-blur border-b border-border">
+      <section className="py-4 lg:py-8 fixed w-full top-0 z-50 bg-background/80 backdrop-blur">
         <div className="container max-w-5xl mx-auto px-4">
           <div className="border border-border rounded-[27px] md:rounded-full bg-card/80 backdrop-blur max-w-5xl mx-auto">
             <div className="grid grid-cols-2 lg:grid-cols-3 p-2 px-4 items-center">
@@ -159,6 +159,7 @@ const LandingPage = () => {
             Your comprehensive portal for real-time network statistics, staking insights, and transaction tracking.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            
             <button
               className="bg-primary text-primary-foreground px-8 py-4 rounded-full font-semibold shadow hover:bg-primary/90 transition-all flex items-center justify-center"
               onClick={() => navigate('/explorer')}
@@ -166,6 +167,22 @@ const LandingPage = () => {
               Explore
             </button>
           </div>
+          <div className="flex flex-wrap justify-center gap-3 mt-12 max-w-3xl mx-auto">
+              {[
+                "Real-time Transaction Tracking",
+                "Advanced Block Analysis", 
+                "Address Monitoring",
+                "Smart Contract Insights"
+              ].map((feature, index) => (
+                <span 
+                  key={index}
+                  className="inline-flex items-center px-4 py-2 bg-card/80 backdrop-blur-sm text-foreground text-sm font-medium rounded-full border border-border shadow-sm hover:shadow-md transition-all duration-200"
+                >
+                  <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                  {feature}
+                </span>
+              ))}
+            </div>
         </div>
       </section>
 
@@ -176,19 +193,19 @@ const LandingPage = () => {
 
           {/* Demo Stats Row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-            <div className="bg-card border border-border rounded-xl p-6 flex flex-col items-center text-center shadow">
+            <div className="bg-card rounded-xl p-6 flex flex-col items-center text-center shadow">
               <div className="text-3xl font-bold text-primary mb-1">297</div>
               <div className="text-sm text-muted-foreground">Validators Online</div>
             </div>
-            <div className="bg-card border border-border rounded-xl p-6 flex flex-col items-center text-center shadow">
+            <div className="bg-card rounded-xl p-6 flex flex-col items-center text-center shadow">
               <div className="text-3xl font-bold text-primary mb-1">13.2%</div>
               <div className="text-sm text-muted-foreground">Staking APR</div>
             </div>
-            <div className="bg-card border border-border rounded-xl p-6 flex flex-col items-center text-center shadow">
+            <div className="bg-card rounded-xl p-6 flex flex-col items-center text-center shadow">
               <div className="text-3xl font-bold text-primary mb-1">$987M</div>
               <div className="text-sm text-muted-foreground">Total Value Locked</div>
             </div>
-            <div className="bg-card border border-border rounded-xl p-6 flex flex-col items-center text-center shadow">
+            <div className="bg-card rounded-xl p-6 flex flex-col items-center text-center shadow">
               <div className="text-3xl font-bold text-primary mb-1">1,234,567</div>
               <div className="text-sm text-muted-foreground">Transactions</div>
             </div>
@@ -196,7 +213,7 @@ const LandingPage = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[minmax(180px,1fr)]">
             {/* Feature 1 - Large */}
-            <div className="bg-card border border-border rounded-xl shadow p-8 flex flex-col justify-between hover:bg-primary/5 transition-all col-span-1 row-span-2 lg:col-span-2">
+            <div className="bg-card rounded-xl shadow p-8 flex flex-col justify-between hover:bg-primary/5 transition-all col-span-1 row-span-2 lg:col-span-2">
               <div>
                 <div className="flex items-center mb-4">
                   <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary mr-4">
@@ -208,7 +225,7 @@ const LandingPage = () => {
               </div>
             </div>
             {/* Feature 2 */}
-            <div className="bg-card border border-border rounded-xl shadow p-8 flex flex-col justify-between hover:bg-primary/5 transition-all">
+            <div className="bg-card rounded-xl shadow p-8 flex flex-col justify-between hover:bg-primary/5 transition-all">
               <div className="flex items-center mb-4">
                 <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary mr-4">
                   <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
@@ -218,7 +235,7 @@ const LandingPage = () => {
               <p className="text-muted-foreground">Delegate, claim rewards, and compare validators with ease.</p>
             </div>
             {/* Feature 3 */}
-            <div className="bg-card border border-border rounded-xl shadow p-8 flex flex-col justify-between hover:bg-primary/5 transition-all">
+            <div className="bg-card rounded-xl shadow p-8 flex flex-col justify-between hover:bg-primary/5 transition-all">
               <div className="flex items-center mb-4">
                 <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary mr-4">
                   <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 9h8M8 13h6"/></svg>
@@ -228,7 +245,7 @@ const LandingPage = () => {
               <p className="text-muted-foreground">Track every transaction and block with powerful search and filters.</p>
             </div>
             {/* Feature 4 - Tall */}
-            <div className="bg-card border border-border rounded-xl shadow p-8 flex flex-col justify-between hover:bg-primary/5 transition-all row-span-2">
+            <div className="bg-card rounded-xl shadow p-8 flex flex-col justify-between hover:bg-primary/5 transition-all row-span-2">
               <div>
                 <div className="flex items-center mb-4">
                   <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary mr-4">
@@ -240,7 +257,7 @@ const LandingPage = () => {
               </div>
             </div>
             {/* Feature 5 */}
-            <div className="bg-card border border-border rounded-xl shadow p-8 flex flex-col justify-between hover:bg-primary/5 transition-all">
+            <div className="bg-card rounded-xl shadow p-8 flex flex-col justify-between hover:bg-primary/5 transition-all">
               <div className="flex items-center mb-4">
                 <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary mr-4">
                   <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
@@ -250,7 +267,7 @@ const LandingPage = () => {
               <p className="text-muted-foreground">Built on modern web tech for a smooth, secure, and responsive experience.</p>
             </div>
             {/* Feature 6 */}
-            <div className="bg-card border border-border rounded-xl shadow p-8 flex flex-col justify-between hover:bg-primary/5 transition-all">
+            <div className="bg-card rounded-xl shadow p-8 flex flex-col justify-between hover:bg-primary/5 transition-all">
               <div className="flex items-center mb-4">
                 <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary mr-4">
                   <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>
@@ -274,7 +291,7 @@ const LandingPage = () => {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="max-w-4xl mx-auto text-center bg-card border border-border rounded-3xl p-12"
+          className="max-w-4xl mx-auto text-center bg-card rounded-3xl p-12"
         >
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
             Ready to Get Started?

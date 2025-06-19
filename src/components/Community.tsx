@@ -49,7 +49,7 @@ const socialLinks = [
 
 export default function CommunitySection() {
   return (
-    <section id="community" className="relative py-12 bg-background border-t border-border overflow-hidden">
+    <section id="community" className="relative py-12 bg-background overflow-hidden">
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 40 }}

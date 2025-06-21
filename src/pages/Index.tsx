@@ -3,11 +3,13 @@ import NetworkStats from '@/components/NetworkStats';
 import StakingInterface from '@/components/StakingInterface';
 import ValidatorPanel from '@/components/ValidatorPanel';
 import TransactionExplorer from '@/components/TransactionExplorer';
-import { FaChartLine, FaShieldAlt, FaUsers, FaBolt } from 'react-icons/fa';
+import TransferFunds from '@/components/TransferFunds';
+import { FaChartLine, FaShieldAlt, FaUsers, FaBolt, FaPaperPlane } from 'react-icons/fa';
 import Header from '@/components/Header';
 import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
+import Footer from '@/components/Footer';
 //import NavigationBar from '@/components/NavigationBar';
 
 const NavigationBar = ({ tabs, activeTab, setActiveTab }) => {
@@ -110,6 +112,7 @@ const Index = () => {
     { id: 'staking', label: 'Staking', icon: FaShieldAlt },
     { id: 'validators', label: 'Validators', icon: FaUsers },
     { id: 'transactions', label: 'Transactions', icon: FaBolt },
+    { id: 'transfer', label: 'Transfer', icon: FaPaperPlane },
   ];
 
   const renderContent = () => {
@@ -122,6 +125,8 @@ const Index = () => {
         return <ValidatorPanel />;
       case 'transactions':
         return <TransactionExplorer />;
+      case 'transfer':
+        return <TransferFunds />;
       default:
         return <NetworkStats />;
     }
@@ -140,14 +145,7 @@ const Index = () => {
         {renderContent()}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-card border-t border-border mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-muted-foreground">
-            <p>&copy; 2024 XORION. Built with React & Custom Data.</p>
-          </div>
-        </div>
-      </footer>
+     <Footer></Footer>
     </div>
   );
 };

@@ -47,7 +47,7 @@ const StakingCalculator = () => {
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="amount">Staking Amount (ATOM)</Label>
+            <Label htmlFor="amount">Staking Amount (xor)</Label>
             <Input
               id="amount"
               type="number"
@@ -97,7 +97,7 @@ const StakingCalculator = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-foreground">
-                {totalRewards.toFixed(2)} ATOM
+                {totalRewards.toFixed(2)} xor
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 After {duration} months
@@ -111,7 +111,7 @@ const StakingCalculator = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-foreground">
-                {(parseFloat(amount) + totalRewards).toFixed(2)} ATOM
+                {(parseFloat(amount) + totalRewards).toFixed(2)} xor
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Including initial stake
@@ -131,7 +131,7 @@ const StakingCalculator = () => {
               />
               <YAxis 
                 stroke="hsl(var(--muted-foreground))"
-                label={{ value: 'ATOM', angle: -90, position: 'insideLeft' }}
+                label={{ value: 'xor', angle: -90, position: 'insideLeft' }}
               />
               <Tooltip
                 contentStyle={{
@@ -140,7 +140,7 @@ const StakingCalculator = () => {
                   borderRadius: '8px'
                 }}
                 formatter={(value: number, name: string) => [
-                  `${value.toFixed(2)} ATOM`,
+                  `${value.toFixed(2)} xor`,
                   name === 'amount' ? 'Total Value' : 'Rewards'
                 ]}
               />

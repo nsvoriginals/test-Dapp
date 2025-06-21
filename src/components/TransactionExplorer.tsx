@@ -1,126 +1,147 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { FaSearch, FaExternalLinkAlt, FaCopy, FaFilter, FaBars, FaTimes } from 'react-icons/fa';
+import { FaSearch, FaExternalLinkAlt, FaCopy, FaFilter, FaBars, FaTimes, FaClock, FaCheckCircle, FaTimesCircle, FaInfoCircle, FaArrowLeft } from 'react-icons/fa';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import usePolkadot from '@/hooks/use-polkadot';
-import { ApiPromise } from '@polkadot/api';
+import { usePolkadotStore } from '@/stores/polkadotStore';
+import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+// Debounce hook for search input
+const useDebounce = (value: string, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
+// Skeleton components for loading states
+const TransactionSkeleton = () => (
+  <TableRow>
+    <TableCell>
+      <div className="h-4 bg-muted-foreground/20 rounded w-24 animate-pulse"></div>
+    </TableCell>
+    <TableCell>
+      <div className="h-4 bg-muted-foreground/20 rounded w-12 animate-pulse"></div>
+    </TableCell>
+    <TableCell>
+      <div className="h-6 bg-muted-foreground/20 rounded w-20 animate-pulse"></div>
+    </TableCell>
+    <TableCell>
+      <div className="h-4 bg-muted-foreground/20 rounded w-16 animate-pulse"></div>
+    </TableCell>
+    <TableCell>
+      <div className="h-4 w-4 bg-muted-foreground/20 rounded animate-pulse"></div>
+    </TableCell>
+    <TableCell>
+      <div className="h-4 bg-muted-foreground/20 rounded w-16 animate-pulse"></div>
+    </TableCell>
+  </TableRow>
+);
+
+const BlockSkeleton = () => (
+  <TableRow>
+    <TableCell>
+      <div className="h-4 bg-muted-foreground/20 rounded w-16 animate-pulse"></div>
+    </TableCell>
+    <TableCell>
+      <div className="h-4 bg-muted-foreground/20 rounded w-24 animate-pulse"></div>
+    </TableCell>
+    <TableCell>
+      <div className="h-6 bg-muted-foreground/20 rounded w-8 animate-pulse"></div>
+    </TableCell>
+    <TableCell>
+      <div className="h-4 bg-muted-foreground/20 rounded w-16 animate-pulse"></div>
+    </TableCell>
+  </TableRow>
+);
 
 const TransactionExplorer = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all');
   const { toast } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { api, isConnected, loading: apiLoading, error: apiError } = usePolkadot();
-  const [extrinsics, setExtrinsics] = useState<any[]>([]);
-  const [blocks, setBlocks] = useState<any[]>([]);
-  const [selectedTx, setSelectedTx] = useState<any>(null);
-  const [txDetails, setTxDetails] = useState<any>(null);
-  const [txLoading, setTxLoading] = useState(false);
-  const [txError, setTxError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [detailsSearchHash, setDetailsSearchHash] = useState('');
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
-  // Fetch latest 10 blocks and their extrinsics
+  // Debounce search query for better performance
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  // Get data from store
+  const {
+    apiState,
+    transactionData,
+    isTransactionLoading,
+    isTransactionFetching,
+    transactionDetails,
+    isDetailsLoading,
+    detailsError,
+    fetchTransactionData,
+    fetchTransactionDetails,
+    refreshTransactionData
+  } = usePolkadotStore();
+
+  // Memoize filtered transactions with debounced search
+  const filteredExtrinsics = useMemo(() => {
+    return transactionData.transactions.filter(tx => {
+      const matchesSearch = tx.hash.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+                           tx.signer.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+                           `${tx.section}.${tx.method}`.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
+      
+      const matchesFilter = filterType === 'all' || 
+                           (filterType === 'transfers' && tx.section === 'balances') ||
+                           (filterType === 'staking' && tx.section === 'staking') ||
+                           (filterType === 'system' && tx.section === 'system');
+      
+      return matchesSearch && matchesFilter;
+    });
+  }, [transactionData.transactions, debouncedSearchQuery, filterType]);
+
+  // Memoize paginated transactions
+  const paginatedExtrinsics = useMemo(() => {
+    return filteredExtrinsics.slice((currentPage - 1) * 10, currentPage * 10);
+  }, [filteredExtrinsics, currentPage]);
+
+  // Start fetching immediately when connected
   useEffect(() => {
-    const fetchExtrinsics = async () => {
-      if (!api || !isConnected) return;
-      try {
-        const latestHeader = await api.rpc.chain.getHeader();
-        const latestBlockNumber = Number(latestHeader.number.toBigInt());
-        const blockNumbers = Array.from({ length: 10 }, (_, i) => latestBlockNumber - i);
-        const blockHashes = await Promise.all(blockNumbers.map(n => api.rpc.chain.getBlockHash(n)));
-        const blockData = await Promise.all(blockHashes.map(hash => api.rpc.chain.getBlock(hash)));
-        const extrinsicsList: any[] = [];
-        const blocksList: any[] = [];
-        for (let i = 0; i < blockData.length; i++) {
-          const block = blockData[i];
-          const blockHash = blockHashes[i].toHex();
-          const blockNumber = blockNumbers[i];
-          const timestampExtrinsic = block.block.extrinsics.find((ex: any) => ex.method.section === 'timestamp');
-          let timestamp = null;
-          if (timestampExtrinsic) {
-            try {
-              timestamp = Number(timestampExtrinsic.method.args[0].toString());
-            } catch {}
-          }
-          blocksList.push({
-            height: blockNumber,
-            hash: blockHash,
-            timestamp: timestamp ? new Date(timestamp) : null,
-            txCount: block.block.extrinsics.length,
-            proposer: '',
-            size: '',
-          });
-          block.block.extrinsics.forEach((ex: any, idx: number) => {
-            extrinsicsList.push({
-              hash: ex.hash.toHex(),
-              block: blockNumber,
-              blockHash,
-              index: idx,
-              method: `${ex.method.section}.${ex.method.method}`,
-              signer: ex.signer?.toString() || '',
-              args: ex.method.args.map((a: any) => a.toString()),
-              isSigned: ex.isSigned,
-              nonce: ex.nonce?.toString() || '',
-              tip: ex.tip?.toString() || '',
-              timestamp: timestamp ? new Date(timestamp) : null,
-            });
-          });
-        }
-        setExtrinsics(extrinsicsList);
-        setBlocks(blocksList);
-      } catch (err) {
-        setExtrinsics([]);
-        setBlocks([]);
-      }
-    };
-    fetchExtrinsics();
-  }, [api, isConnected]);
-
-  // Filter extrinsics by search and type
-  const filteredExtrinsics = extrinsics.filter((ex) => {
-    const matchesSearch =
-      ex.hash.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ex.signer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ex.block.toString().includes(searchTerm);
-    const matchesFilter = filterType === 'all' || ex.method.toLowerCase().includes(filterType);
-    return matchesSearch && matchesFilter;
-  });
-
-  // Fetch transaction details for selected extrinsic
-  useEffect(() => {
-    const fetchTxDetails = async () => {
-      if (!api || !selectedTx) return;
-      setTxLoading(true);
-      setTxError(null);
-      try {
-        // Get block and extrinsic details
-        const block = await api.rpc.chain.getBlock(selectedTx.blockHash);
-        const extrinsic = block.block.extrinsics[selectedTx.index];
-        setTxDetails(extrinsic.toHuman());
-      } catch (err: any) {
-        setTxError(err.message || 'Failed to fetch transaction details');
-        setTxDetails(null);
-      } finally {
-        setTxLoading(false);
-      }
-    };
-    if (isConnected && selectedTx) {
-      fetchTxDetails();
-    } else {
-      setTxDetails(null);
+    if (apiState.status === 'connected' && transactionData.lastUpdated === 0) {
+      fetchTransactionData();
     }
-  }, [api, isConnected, selectedTx]);
+  }, [apiState.status]); // Remove fetchTransactionData from deps to prevent loops
 
-  const copyToClipboard = (text: string) => {
+  const handleRefresh = () => {
+    refreshTransactionData();
+  };
+
+  const handleSearchDetails = () => {
+    if (detailsSearchHash.trim()) {
+      fetchTransactionDetails(detailsSearchHash.trim());
+      setShowDetailsDialog(true);
+    }
+  };
+
+  const handleCopyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast({
       title: "Copied!",
-      description: "Hash copied to clipboard",
+      description: `${label} copied to clipboard`,
     });
   };
 
@@ -128,299 +149,563 @@ const TransactionExplorer = () => {
     return `${hash.slice(0, 8)}...${hash.slice(-8)}`;
   };
 
-  const formatTime = (date: Date) => {
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - date.getTime()) / 60000);
-    if (diff < 1) return 'Just now';
-    if (diff < 60) return `${diff}m ago`;
-    if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
-    return `${Math.floor(diff / 1440)}d ago`;
+  const formatAddress = (address: string) => {
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'transfer': return 'bg-[hsl(var(--badge-transfer-bg))] text-[hsl(var(--badge-transfer-fg))] border-[hsl(var(--primary))/30]';
-      case 'delegate': return 'bg-[hsl(var(--badge-delegate-bg))] text-[hsl(var(--badge-delegate-fg))] border-[hsl(var(--accent))/30]';
-      case 'undelegate': return 'bg-[hsl(var(--badge-undelegate-bg))] text-[hsl(var(--badge-undelegate-fg))] border-[hsl(var(--destructive))/30]';
-      case 'vote': return 'bg-[hsl(var(--badge-vote-bg))] text-[hsl(var(--badge-vote-fg))] border-[hsl(var(--secondary))/30]';
-      default: return 'bg-muted/20 text-muted-foreground border-border';
+  const formatBalance = (balance: string) => {
+    const num = parseFloat(balance);
+    if (num >= 1e12) return `${(num / 1e12).toFixed(2)} DOT`;
+    if (num >= 1e9) return `${(num / 1e9).toFixed(2)} mDOT`;
+    if (num >= 1e6) return `${(num / 1e6).toFixed(2)} µDOT`;
+    return `${num} planck`;
+  };
+
+  const getStatusIcon = (success: boolean) => {
+    return success ? (
+      <FaCheckCircle className="w-4 h-4 text-green-500" />
+    ) : (
+      <FaTimesCircle className="w-4 h-4 text-red-500" />
+    );
+  };
+
+  const getMethodColor = (section: string) => {
+    switch (section) {
+      case 'balances': return 'bg-blue-500/20 text-blue-500 border-blue-500/30';
+      case 'staking': return 'bg-green-500/20 text-green-500 border-green-500/30';
+      case 'system': return 'bg-gray-500/20 text-gray-500 border-gray-500/30';
+      default: return 'bg-primary/20 text-primary border-primary/30';
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'success': return 'bg-[hsl(var(--badge-success-bg))] text-[hsl(var(--badge-success-fg))] border-[hsl(var(--primary))/30]';
-      case 'failed': return 'bg-[hsl(var(--badge-failed-bg))] text-[hsl(var(--badge-failed-fg))] border-[hsl(var(--destructive))/30]';
-      case 'pending': return 'bg-[hsl(var(--badge-pending-bg))] text-[hsl(var(--badge-pending-fg))] border-[hsl(var(--secondary))/30]';
-      default: return 'bg-muted/20 text-muted-foreground border-border';
-    }
-  };
+  // Show connection status if not connected
+  if (apiState.status !== 'connected') {
+    return (
+      <div className="min-h-screen bg-card p-2 sm:p-4 lg:p-6 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <h3 className="text-lg font-semibold mb-2">
+              {apiState.status === 'connecting' ? 'Connecting to Network...' :
+               apiState.status === 'error' ? 'Connection Failed' :
+               'Disconnected'}
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              {apiState.status === 'connecting' ? 'Establishing connection to Polkadot network...' :
+               apiState.status === 'error' ? 'Unable to connect to any available endpoints' :
+               'Not connected to the network'}
+            </p>
+            {apiState.lastError && (
+              <div className="text-sm text-destructive bg-destructive/10 p-2 rounded mb-4">
+                Error: {apiState.lastError}
+              </div>
+            )}
+            <div className="text-xs text-muted-foreground">
+              Status: {apiState.status} | 
+              Endpoint: {apiState.endpoint || 'None'} |
+              Attempts: {apiState.connectionAttempts}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-  const toggleSidebar = () => setSidebarOpen((open) => !open);
-  const handleNavClick = (id) => {
-    // Implement the logic to handle navigation click
-    console.log(`Navigating to ${id}`);
-    setSidebarOpen(false); // close sidebar on mobile after navigation
-  };
+  // Show UI immediately when connected, even if data is still loading
+  const hasData = transactionData.lastUpdated > 0;
+  const showSkeleton = !hasData && isTransactionLoading;
 
   return (
-    <div className="space-y-8 px-4">
-      {/* Mobile Header with Hamburger */}
-     
-      <div className="flex">
-        {/* Sidebar */}
-        <div className={`
-          fixed lg:static ... transition-transform
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          lg:translate-x-0
-        `}>
-          {/* ...nav buttons... */}
-          {/* Add your navigation buttons here */}
+    <div className="min-h-screen bg-card p-2 sm:p-4 lg:p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Transaction Explorer</h1>
+            <p className="text-muted-foreground">Explore recent transactions and blocks on the network</p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Badge variant="outline" className="text-xs">
+              {!hasData && isTransactionLoading ? 'Loading...' : isTransactionFetching ? 'Updating...' : 'Live'}
+            </Badge>
+            {transactionData.lastUpdated > 0 && (
+              <span className="text-xs text-muted-foreground">
+                Updated: {new Date(transactionData.lastUpdated).toLocaleTimeString()}
+              </span>
+            )}
+            {isTransactionFetching && !isTransactionLoading && (
+              <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+            )}
+            <Button onClick={handleRefresh} size="sm" variant="outline" disabled={isTransactionFetching}>
+              {isTransactionFetching ? 'Refreshing...' : 'Refresh'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="lg:hidden"
+            >
+              {sidebarOpen ? <FaTimes className="w-4 h-4" /> : <FaBars className="w-4 h-4" />}
+            </Button>
+          </div>
         </div>
-        {/* Overlay */}
-        {sidebarOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
-        )}
-        {/* Main Content */}
-        <div className="flex-1 ...">
-          {/* Search and Filters */}
-          <Card className="bg-card border border-border mb-10 mx-auto w-full max-w-md text-center">
-            <CardHeader>
-              <CardTitle className="text-foreground">Transaction Explorer</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                <div className="relative flex-1">
-                  <FaSearch className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Sidebar */}
+          <div className={cn(
+            "lg:col-span-1 space-y-4",
+            sidebarOpen ? "block" : "hidden lg:block"
+          )}>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <FaSearch className="w-5 h-5 text-primary" />
+                  <span>Search & Filter</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground">Search</label>
                   <Input
-                    placeholder="Search by hash, address, or block..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8 bg-input border-border text-foreground"
+                    placeholder="Search by hash, address, or method..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
-                <div className="flex items-center space-x-2">
-                  <FaFilter className="w-4 h-4 text-muted-foreground" />
-                  <Select onValueChange={setFilterType} value={filterType}>
-                    <SelectTrigger className="w-[180px] bg-input border-border text-foreground">
-                      <SelectValue placeholder="Select type" />
+                
+                <div>
+                  <label className="text-sm font-medium text-foreground">Filter by Type</label>
+                  <Select value={filterType} onValueChange={setFilterType}>
+                    <SelectTrigger>
+                      <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-popover border-border text-popover-foreground">
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="transfer">Transfer</SelectItem>
-                      <SelectItem value="delegate">Delegate</SelectItem>
-                      <SelectItem value="undelegate">Undelegate</SelectItem>
-                      <SelectItem value="vote">Vote</SelectItem>
+                    <SelectContent>
+                      <SelectItem value="all">All Transactions</SelectItem>
+                      <SelectItem value="transfers">Transfers</SelectItem>
+                      <SelectItem value="staking">Staking</SelectItem>
+                      <SelectItem value="system">System</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Recent Transactions */}
-            <div className="lg:col-span-2">
-              <Tabs defaultValue="transactions" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-2 lg:grid-cols-2 bg-muted/40">
-                  <TabsTrigger value="transactions" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Transactions</TabsTrigger>
-                  <TabsTrigger value="blocks" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Blocks</TabsTrigger>
-                </TabsList>
+                <Separator />
 
-                <TabsContent value="transactions">
-                  <Card className="bg-card border border-border">
-                    <CardHeader>
-                      <CardTitle className="text-foreground">Recent Transactions</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="overflow-x-auto">
-                        <Table className="min-w-full leading-normal">
-                          <thead>
-                            <tr>
-                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tx Hash</TableHead>
-                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Block</TableHead>
-                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Time</TableHead>
-                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Type</TableHead>
-                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Amount</TableHead>
-                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">From</TableHead>
-                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">To</TableHead>
-                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fee</TableHead>
-                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</TableHead>
-                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</TableHead>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {filteredExtrinsics.map((tx, index) => (
-                              <TableRow key={index} className="border-b border-muted last:border-b-0" onClick={() => setSelectedTx(tx)} style={{ cursor: 'pointer', background: selectedTx?.hash === tx.hash ? 'rgba(0,0,0,0.05)' : undefined }}>
-                                <TableCell className="px-5 py-5 text-sm font-mono text-primary">
-                                  {formatHash(tx.hash)}
-                                </TableCell>
-                                <TableCell className="px-5 py-5 text-sm text-foreground">{tx.block}</TableCell>
-                                <TableCell className="px-5 py-5 text-sm text-muted-foreground">{formatTime(tx.timestamp)}</TableCell>
-                                <TableCell className="px-5 py-5 text-sm">
-                                  <Badge className={getTypeColor(tx.method.split('.')[0])}>{tx.method.split('.')[0]}</Badge>
-                                </TableCell>
-<TableCell className="...">
-  {(tx.method === 'balances.transfer' || tx.method === 'balances.transferKeepAlive') ? `${tx.args[1]} DOT` : '—'}
-</TableCell>
-                                <TableCell className="px-5 py-5 text-sm font-mono text-muted-foreground">
-                                  {tx.signer.substring(0, 8)}...
-                                </TableCell>
-                                <TableCell className="px-5 py-5 text-sm font-mono text-muted-foreground">
-                                  {tx.signer.substring(0, 8)}...
-                                </TableCell>
-                                <TableCell className="px-5 py-5 text-sm text-foreground">{tx.tip} ATOM</TableCell>
-                                <TableCell className="px-5 py-5 text-sm">
-                                  <Badge className={getStatusColor(tx.isSigned ? 'success' : 'failed')}>{tx.isSigned ? 'Signed' : 'Unsigned'}</Badge>
-                                </TableCell>
-                                <TableCell className="px-5 py-5 text-sm">
-                                  <div className="flex items-center space-x-2">
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon" 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        copyToClipboard(tx.hash);
-                                      }}
-                                      className="text-muted-foreground hover:text-primary"
-                                    >
-                                      <FaCopy className="h-4 w-4" />
-                                    </Button>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon" 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        window.open(`https://explorer.example.com/tx/${tx.hash}`, '_blank');
-                                      }}
-                                      className="text-muted-foreground hover:text-primary"
-                                    >
-                                      <FaExternalLinkAlt className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                            {filteredExtrinsics.length === 0 && (
-                              <TableRow>
-                                <TableCell colSpan={10} className="px-5 py-5 text-center text-muted-foreground">
-                                  No transactions found matching your criteria.
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </tbody>
-                        </Table>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
+                <div>
+                  <label className="text-sm font-medium text-foreground flex items-center space-x-2">
+                    <FaInfoCircle className="w-4 h-4 text-primary" />
+                    <span>Transaction Details</span>
+                  </label>
+                  <div className="space-y-2 mt-2">
+                    <Input
+                      placeholder="Enter transaction hash..."
+                      value={detailsSearchHash}
+                      onChange={(e) => setDetailsSearchHash(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearchDetails()}
+                    />
+                    <Button 
+                      onClick={handleSearchDetails} 
+                      size="sm" 
+                      className="w-full"
+                      disabled={!detailsSearchHash.trim() || isDetailsLoading}
+                    >
+                      {isDetailsLoading ? 'Searching...' : 'Search Details'}
+                    </Button>
+                  </div>
+                </div>
 
-                <TabsContent value="blocks">
-                  <Card className="bg-card border border-border">
-                    <CardHeader>
-                      <CardTitle className="text-foreground">Recent Blocks</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="overflow-x-auto">
-                        <Table className="min-w-full leading-normal">
-                          <thead>
-                            <tr>
-                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Height</TableHead>
-                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Hash</TableHead>
-                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Time</TableHead>
-                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tx Count</TableHead>
-                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Proposer</TableHead>
-                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Size</TableHead>
-                              <TableHead className="px-5 py-3 border-b-2 border-muted text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</TableHead>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {blocks.map((block, index) => (
-                              <TableRow key={index} className="border-b border-muted last:border-b-0">
-                                <TableCell className="px-5 py-5 text-sm font-medium text-primary">{block.height}</TableCell>
-                                <TableCell className="px-5 py-5 text-sm font-mono text-muted-foreground">
-                                  {formatHash(block.hash)}
-                                </TableCell>
-                                <TableCell className="px-5 py-5 text-sm text-muted-foreground">{formatTime(block.timestamp)}</TableCell>
-                                <TableCell className="px-5 py-5 text-sm text-foreground">{block.txCount}</TableCell>
-                                <TableCell className="px-5 py-5 text-sm text-foreground">{block.proposer}</TableCell>
-                                <TableCell className="px-5 py-5 text-sm text-foreground">{block.size}</TableCell>
-                                <TableCell className="px-5 py-5 text-sm">
-                                  <div className="flex items-center space-x-2">
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon" 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        copyToClipboard(block.hash);
-                                      }}
-                                      className="text-muted-foreground hover:text-primary"
-                                    >
-                                      <FaCopy className="h-4 w-4" />
-                                    </Button>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon" 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        window.open(`https://explorer.example.com/block/${block.hash}`, '_blank');
-                                      }}
-                                      className="text-muted-foreground hover:text-primary"
-                                    >
-                                      <FaExternalLinkAlt className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                            {blocks.length === 0 && (
-                              <TableRow>
-                                <TableCell colSpan={7} className="px-5 py-5 text-center text-muted-foreground">
-                                  No blocks found.
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </tbody>
-                        </Table>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
-            </div>
-
-            {/* Transaction Details (Polkadot or Mock) */}
-            <Card className="bg-card border border-border mt-8">
-              <CardHeader>
-                <CardTitle className="text-foreground">Transaction Details</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {selectedTx ? (
-                  apiLoading ? (
-                    <p className="text-muted-foreground">Connecting to Polkadot network...</p>
-                  ) : txLoading ? (
-                    <p className="text-muted-foreground">Loading transaction details...</p>
-                  ) : txError ? (
-                    <p className="text-destructive">{txError}</p>
-                  ) : txDetails ? (
-                    <pre className="text-xs bg-muted p-2 rounded overflow-x-auto max-h-64">{JSON.stringify(txDetails, null, 2)}</pre>
-                  ) : (
-                    <>
-                      <div className="mb-2"><span className="font-semibold">Hash:</span> {selectedTx.hash}</div>
-                      <div className="mb-2"><span className="font-semibold">Block:</span> {selectedTx.block}</div>
-                      <div className="mb-2"><span className="font-semibold">Method:</span> {selectedTx.method}</div>
-                      <div className="mb-2"><span className="font-semibold">Signer:</span> {selectedTx.signer}</div>
-                      <div className="mb-2"><span className="font-semibold">Args:</span> {selectedTx.args.join(', ')}</div>
-                    </>
-                  )
-                ) : (
-                  <p className="text-muted-foreground">Select a transaction to view its details.</p>
-                )}
+                <div className="pt-4 border-t border-border">
+                  <div className="text-sm font-medium text-foreground mb-2">Statistics</div>
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <div>Total Transactions: {transactionData.transactions.length}</div>
+                    <div>Filtered Results: {filteredExtrinsics.length}</div>
+                    <div>Current Page: {currentPage} of {Math.ceil(filteredExtrinsics.length / 10)}</div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
+
+          {/* Main Content */}
+          <div className="lg:col-span-3 space-y-6">
+            <Tabs defaultValue="transactions" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="transactions">Recent Transactions</TabsTrigger>
+                <TabsTrigger value="blocks">Recent Blocks</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="transactions" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Transactions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Hash</TableHead>
+                            <TableHead>Block</TableHead>
+                            <TableHead>Method</TableHead>
+                            <TableHead>Signer</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Time</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {showSkeleton ? (
+                            // Show skeleton rows
+                            Array.from({ length: 10 }, (_, i) => <TransactionSkeleton key={i} />)
+                          ) : (
+                            paginatedExtrinsics.map((tx, index) => (
+                              <TableRow key={index} className="hover:bg-muted/50">
+                                <TableCell>
+                                  <div className="flex items-center space-x-2">
+                                    <span className="font-mono text-sm">{formatHash(tx.hash)}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleCopyToClipboard(tx.hash, 'Hash')}
+                                      className="h-6 w-6 p-0"
+                                    >
+                                      <FaCopy className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm">{tx.blockNumber}</span>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge className={cn("text-xs", getMethodColor(tx.section))}>
+                                    {tx.section}.{tx.method}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm font-mono">{formatAddress(tx.signer)}</span>
+                                </TableCell>
+                                <TableCell>
+                                  {getStatusIcon(tx.success)}
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm text-muted-foreground">
+                                    {tx.timestamp ? tx.timestamp.toLocaleTimeString() : 'N/A'}
+                                  </span>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Pagination */}
+                    {filteredExtrinsics.length > 10 && (
+                      <div className="flex items-center justify-between mt-4">
+                        <div className="text-sm text-muted-foreground">
+                          Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, filteredExtrinsics.length)} of {filteredExtrinsics.length} transactions
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                            disabled={currentPage === 1}
+                          >
+                            Previous
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(currentPage + 1)}
+                            disabled={currentPage >= Math.ceil(filteredExtrinsics.length / 10)}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="blocks" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Blocks</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Height</TableHead>
+                            <TableHead>Hash</TableHead>
+                            <TableHead>Transactions</TableHead>
+                            <TableHead>Time</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {showSkeleton ? (
+                            // Show skeleton rows
+                            Array.from({ length: 10 }, (_, i) => <BlockSkeleton key={i} />)
+                          ) : (
+                            transactionData.blocks.map((block, index) => (
+                              <TableRow key={index} className="hover:bg-muted/50">
+                                <TableCell>
+                                  <span className="font-medium">{block.height}</span>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center space-x-2">
+                                    <span className="font-mono text-sm">{formatHash(block.hash)}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleCopyToClipboard(block.hash, 'Block Hash')}
+                                      className="h-6 w-6 p-0"
+                                    >
+                                      <FaCopy className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">{block.txCount}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm text-muted-foreground">
+                                    {block.timestamp ? block.timestamp.toLocaleTimeString() : 'N/A'}
+                                  </span>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </div>
+
+      {/* Transaction Details Dialog */}
+      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <FaInfoCircle className="w-5 h-5 text-primary" />
+              <span>Transaction Details</span>
+            </DialogTitle>
+          </DialogHeader>
+          
+          <ScrollArea className="max-h-[calc(90vh-120px)]">
+            <div className="space-y-6 p-4">
+              {isDetailsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading transaction details...</p>
+                  </div>
+                </div>
+              ) : detailsError ? (
+                <div className="text-center py-12">
+                  <div className="text-destructive mb-4">
+                    <FaTimesCircle className="w-12 h-12 mx-auto mb-2" />
+                    <p className="text-lg font-semibold">Transaction Not Found</p>
+                  </div>
+                  <p className="text-muted-foreground mb-4">{detailsError}</p>
+                  <Button onClick={() => setShowDetailsDialog(false)} variant="outline">
+                    <FaArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Explorer
+                  </Button>
+                </div>
+              ) : transactionDetails ? (
+                <>
+                  {/* Transaction Overview */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <span>Transaction Overview</span>
+                        <div className="flex items-center space-x-2">
+                          {getStatusIcon(transactionDetails.success)}
+                          <Badge variant={transactionDetails.success ? "default" : "destructive"}>
+                            {transactionDetails.success ? 'Success' : 'Failed'}
+                          </Badge>
+                        </div>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Transaction Hash</label>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className="font-mono text-sm">{formatHash(transactionDetails.hash)}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleCopyToClipboard(transactionDetails.hash, 'Transaction Hash')}
+                              className="h-6 w-6 p-0"
+                            >
+                              <FaCopy className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Block Number</label>
+                          <p className="text-sm mt-1">{transactionDetails.blockNumber.toLocaleString()}</p>
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Method</label>
+                          <Badge className={cn("mt-1", getMethodColor(transactionDetails.section))}>
+                            {transactionDetails.section}.{transactionDetails.method}
+                          </Badge>
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Timestamp</label>
+                          <p className="text-sm mt-1">
+                            {transactionDetails.timestamp ? 
+                              transactionDetails.timestamp.toLocaleString() : 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Transaction Details */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Transaction Details</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Signer</label>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className="font-mono text-sm">{formatAddress(transactionDetails.signer)}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleCopyToClipboard(transactionDetails.signer, 'Signer Address')}
+                              className="h-6 w-6 p-0"
+                            >
+                              <FaCopy className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Fee</label>
+                          <p className="text-sm mt-1">{formatBalance(transactionDetails.fee)}</p>
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Nonce</label>
+                          <p className="text-sm mt-1">{transactionDetails.nonce}</p>
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Tip</label>
+                          <p className="text-sm mt-1">{formatBalance(transactionDetails.tip)}</p>
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Era</label>
+                          <p className="text-sm mt-1">{transactionDetails.era}</p>
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Index</label>
+                          <p className="text-sm mt-1">{transactionDetails.index}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Arguments */}
+                  {transactionDetails.decodedArgs && transactionDetails.decodedArgs.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Arguments</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {transactionDetails.decodedArgs.map((arg, index) => (
+                            <div key={index} className="flex items-start space-x-4 p-3 bg-muted/50 rounded-lg">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium">{arg.name}</span>
+                                  <Badge variant="outline" className="text-xs">{arg.type}</Badge>
+                                </div>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <span className="font-mono text-sm break-all">{arg.value}</span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleCopyToClipboard(arg.value, `${arg.name} value`)}
+                                    className="h-6 w-6 p-0"
+                                  >
+                                    <FaCopy className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Events */}
+                  {transactionDetails.events && transactionDetails.events.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Events</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {transactionDetails.events.map((event, index) => (
+                            <div key={index} className="flex items-center space-x-3 p-2 bg-muted/30 rounded">
+                              <Badge variant="outline" className="text-xs">
+                                {event.phase}
+                              </Badge>
+                              <span className="text-sm">
+                                {event.event.section}.{event.event.method}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Signature */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Signature</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-mono text-sm break-all">{formatHash(transactionDetails.signature)}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopyToClipboard(transactionDetails.signature, 'Signature')}
+                          className="h-6 w-6 p-0"
+                        >
+                          <FaCopy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              ) : null}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

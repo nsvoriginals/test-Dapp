@@ -2,13 +2,15 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Wallet, ChevronDown, Copy, LogOut } from 'lucide-react';
-import { FaWallet, FaChevronDown, FaCopy, FaSignOutAlt } from 'react-icons/fa';
+import { FaWallet, FaChevronDown, FaCopy, FaSignOutAlt, FaExternalLinkAlt } from 'react-icons/fa';
 import { useToast } from '@/hooks/use-toast';
-import usePolkadot from '@/hooks/use-polkadot';
+import { usePolkadotStore } from '@/stores/polkadotStore';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
 import { InjectedAccountWithMeta } from '@polkadot/extension-inject/types';
+import { formatBalance } from '@polkadot/util';
+import { cn } from '@/lib/utils';
 
 const WalletConnection = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -16,12 +18,14 @@ const WalletConnection = () => {
   const [selectedAccount, setSelectedAccount] = useState<InjectedAccountWithMeta | null>(null);
   const [balance, setBalance] = useState<string | null>(null);
   const { toast } = useToast();
-  const { api, isConnected, loading, error, connect } = usePolkadot();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [dropdownStyle, setDropdownStyle] = useState({ top: 0, left: 0, width: 320 });
 
+  // Get API state from store
+  const { apiState, api } = usePolkadotStore();
+
   useEffect(() => {
-    if (api && isConnected && selectedAccount) {
+    if (api && apiState.status === 'connected' && selectedAccount) {
       const fetchBalance = async () => {
         try {
           const { data: { free }}:any = await api.query.system.account(selectedAccount.address);
@@ -38,49 +42,77 @@ const WalletConnection = () => {
     } else {
       setBalance(null);
     }
-  }, [api, isConnected, selectedAccount, toast]);
+  }, [api, apiState.status, selectedAccount, toast]);
 
   useEffect(() => {
     if (isDropdownOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setDropdownStyle({
-        top: rect.bottom + window.scrollY + 8, // 8px margin
-        left: rect.right - 320, // align right edge, width 320px
-        width: 320
-      });
+      const updatePosition = () => {
+        const rect = buttonRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const dropdownWidth = 320;
+        const dropdownHeight = 280; // Approximate height
+        
+        // Calculate optimal position
+        let left = rect.left;
+        let top = rect.bottom + window.scrollY + 8;
+        
+        // If dropdown would overflow right edge, align to right edge of button
+        if (left + dropdownWidth > viewportWidth) {
+          left = rect.right - dropdownWidth;
+        }
+        
+        // Ensure dropdown doesn't go off the left edge
+        if (left < 0) {
+          left = 8; // 8px margin from left edge
+        }
+        
+        // If dropdown would overflow bottom edge, show above button
+        if (rect.bottom + dropdownHeight > viewportHeight) {
+          top = rect.top + window.scrollY - dropdownHeight - 8;
+        }
+        
+        setDropdownStyle({
+          top: top,
+          left: left,
+          width: dropdownWidth
+        });
+      };
+      
+      updatePosition();
+      
+      // Add resize listener
+      window.addEventListener('resize', updatePosition);
+      window.addEventListener('scroll', updatePosition);
+      
+      return () => {
+        window.removeEventListener('resize', updatePosition);
+        window.removeEventListener('scroll', updatePosition);
+      };
     }
   }, [isDropdownOpen]);
 
   const handleConnect = async () => {
     try {
-      const extensions = await web3Enable('mock-chain-explorer');
-      if (extensions.length === 0) {
-        toast({
-          title: "No Polkadot.js Extension Found",
-          description: "Please install the Polkadot.js extension for your browser.",
-          variant: "destructive",
-        });
-        return;
-      }
+      await web3Enable('mock-chain-explorer');
       const allAccounts = await web3Accounts();
       setAccounts(allAccounts);
       if (allAccounts.length > 0) {
         setSelectedAccount(allAccounts[0]);
-        toast({
-          title: "Wallet Connected!",
-          description: `Connected to ${allAccounts[0].meta.name || allAccounts[0].meta.source} wallet`,
-        });
+        setIsDropdownOpen(true);
       } else {
         toast({
-          title: "No Accounts Found",
-          description: "Please create an account in your Polkadot.js extension.",
+          title: "No accounts found",
+          description: "Please create an account in your wallet extension first",
           variant: "destructive",
         });
       }
-    } catch (e: any) {
+    } catch (error: any) {
       toast({
-        title: "Connection Error",
-        description: e.message,
+        title: "Connection failed",
+        description: error.message || "Failed to connect wallet",
         variant: "destructive",
       });
     }
@@ -89,82 +121,71 @@ const WalletConnection = () => {
   const handleDisconnect = () => {
     setSelectedAccount(null);
     setAccounts([]);
+    setBalance(null);
     setIsDropdownOpen(false);
     toast({
-      title: "Wallet Disconnected",
-      description: "Your wallet has been disconnected",
+      title: "Disconnected",
+      description: "Wallet disconnected successfully",
     });
   };
 
-  const copyAddress = () => {
-    if (selectedAccount) {
-      navigator.clipboard.writeText(selectedAccount.address);
-      toast({
-        title: "Address Copied!",
-        description: "Wallet address copied to clipboard",
-      });
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied!",
+      description: "Address copied to clipboard",
+    });
+  };
+
+  const formatShort = (address: string) => {
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  const getNetworkName = () => {
+    if (!api) return 'Unknown';
+    
+    try {
+      const chain = api.genesisHash?.toHex();
+      if (chain === '0x91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3') {
+        return 'Polkadot';
+      } else if (chain === '0xe143f23803ac50e8f6f8e62695d1ce9e4e1d68aa36c1cd2cfd15340213f3423e') {
+        return 'Westend';
+      } else if (chain === '0x67dddf2673b69e5f875f6f252774958c98deac9b') {
+        return 'Kusama';
+      }
+      return 'Custom Network';
+    } catch {
+      return 'Unknown';
     }
   };
 
-  const formatAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-6)}`;
-  };
-
-  const formatShort = (str: string) => {
-    if (!str || str.length <= 14) return str;
-    return `${str.slice(0, 6)}...${str.slice(-6)}`;
-  };
-
-  if (loading) {
-    return (
-      <Button disabled className="bg-primary/50 text-primary-foreground font-medium animate-pulse">
-        <FaWallet className="w-4 h-4 mr-2" />
-        Connecting...
-      </Button>
-    );
-  }
-
-  if (error) {
-    return (
-      <Button disabled className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-medium">
-        <FaWallet className="w-4 h-4 mr-2" />
-        Connection Error
-      </Button>
-    );
-  }
-
   if (!selectedAccount) {
     return (
-      <Button 
+      <Button
         onClick={handleConnect}
-        className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+        variant="outline"
+        className="flex items-center space-x-2"
+        disabled={apiState.status !== 'connected'}
       >
-        <FaWallet className="w-4 h-4 mr-2" />
-        Connect Wallet
+        <FaWallet className="w-4 h-4" />
+        <span>Connect Wallet</span>
       </Button>
     );
   }
 
   return (
     <>
-      <div className="relative z-[100]">
-        <Button
-          ref={buttonRef}
-          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="bg-card/20 border border-border hover:border-primary text-foreground min-w-0"
-        >
-          <div className="flex items-center space-x-2 min-w-0">
-            <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
-            <div className="text-left min-w-0">
-              <div className="text-sm font-medium text-foreground truncate max-w-[80px] md:max-w-[120px]">{formatAddress(selectedAccount.address)}</div>
-              <div className="text-xs text-muted-foreground truncate max-w-[80px] md:max-w-[120px]">
-                {balance ? `${balance} ATOM` : 'Fetching balance...'}
-              </div>
-            </div>
-            <FaChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-          </div>
-        </Button>
-      </div>
+      <Button
+        ref={buttonRef}
+        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+        variant="outline"
+        className="flex items-center space-x-2"
+      >
+        <FaWallet className="w-4 h-4" />
+        <span>{formatShort(selectedAccount.address)}</span>
+        <FaChevronDown className={cn("w-3 h-3 transition-transform", isDropdownOpen && "rotate-180")} />
+      </Button>
+
       {isDropdownOpen && createPortal(
         <>
           <div 
@@ -172,7 +193,7 @@ const WalletConnection = () => {
             onClick={() => setIsDropdownOpen(false)}
           />
           <Card
-            className="fixed z-[9999] shadow-2xl"
+            className="fixed z-[9999] shadow-2xl border border-border/50 bg-card/95 backdrop-blur-sm"
             style={{
               top: dropdownStyle.top,
               left: dropdownStyle.left,
@@ -181,6 +202,14 @@ const WalletConnection = () => {
               maxWidth: dropdownStyle.width
             }}
           >
+            {/* Arrow pointing to button */}
+            <div 
+              className="absolute w-3 h-3 bg-card border-l border-t border-border/50 transform rotate-45"
+              style={{
+                top: '-6px',
+                left: '20px'
+              }}
+            />
             <CardContent className="p-4">
               <div className="space-y-4">
                 {/* Wallet Info */}
@@ -197,67 +226,69 @@ const WalletConnection = () => {
                 {/* Network */}
                 <div>
                   <div className="text-sm text-muted-foreground mb-1">Network</div>
-                  <div className="text-foreground">{
-                    typeof api?.genesisHash?.toHuman === 'function'
-                      ? formatShort(String(api.genesisHash.toHuman()))
-                      : 'N/A'
-                  }</div>
+                  <div className="text-foreground">{getNetworkName()}</div>
                 </div>
 
                 {/* Address */}
                 <div>
                   <div className="text-sm text-muted-foreground mb-1">Address</div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-foreground font-mono text-sm">{formatAddress(selectedAccount.address)}</span>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-mono text-foreground bg-muted px-2 py-1 rounded">
+                      {formatShort(selectedAccount.address)}
+                    </div>
                     <Button
-                      size="sm"
                       variant="ghost"
-                      onClick={copyAddress}
-                      className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                      size="sm"
+                      onClick={() => copyToClipboard(selectedAccount.address)}
+                      className="h-6 w-6 p-0"
                     >
-                      <FaCopy className="h-3 w-3" />
+                      <FaCopy className="w-3 h-3" />
                     </Button>
                   </div>
                 </div>
 
                 {/* Balance */}
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">Balance</div>
-                  <div className="text-foreground font-semibold">
-                    {balance ? `${balance} ATOM` : 'Fetching balance...'}
-                  </div>
-                </div>
-
-                {/* Account Selection */}
-                {accounts.length > 1 && (
+                {balance && (
                   <div>
-                    <div className="text-sm text-muted-foreground mb-1">Change Account</div>
-                    <select
-                      onChange={(e) => {
-                        const acc = accounts.find(a => a.address === e.target.value);
-                        if (acc) setSelectedAccount(acc);
-                      }}
-                      value={selectedAccount.address}
-                      className="p-2 rounded-md bg-input border border-border text-foreground w-full"
-                    >
-                      {accounts.map(acc => (
-                        <option key={acc.address} value={acc.address}>
-                          {acc.meta.name || formatAddress(acc.address)}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="text-sm text-muted-foreground mb-1">Balance</div>
+                    <div className="text-lg font-bold text-foreground">
+                      {formatBalance(balance, { decimals: 10 })} XOR
+                    </div>
                   </div>
                 )}
 
+                {/* Connection Status */}
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Connection Status</div>
+                  <div className="flex items-center space-x-2">
+                    <div className={cn(
+                      "w-2 h-2 rounded-full",
+                      apiState.status === 'connected' ? "bg-green-500" : 
+                      apiState.status === 'connecting' ? "bg-yellow-500" : "bg-red-500"
+                    )} />
+                    <span className="text-sm text-foreground capitalize">{apiState.status}</span>
+                  </div>
+                </div>
+
                 {/* Actions */}
-                <div className="pt-2 border-t border-border">
+                <div className="flex space-x-2 pt-2 border-t border-border">
                   <Button
-                    onClick={handleDisconnect}
-                    variant="ghost"
-                    className="w-full justify-start text-destructive hover:text-destructive-foreground hover:bg-destructive/10"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyToClipboard(selectedAccount.address)}
+                    className="flex-1"
                   >
-                    <FaSignOutAlt className="w-4 h-4 mr-2" />
-                    Disconnect Wallet
+                    <FaCopy className="w-3 h-3 mr-1" />
+                    Copy Address
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDisconnect}
+                    className="flex-1"
+                  >
+                    <FaSignOutAlt className="w-3 h-3 mr-1" />
+                    Disconnect
                   </Button>
                 </div>
               </div>

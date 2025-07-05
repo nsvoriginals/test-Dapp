@@ -159,7 +159,7 @@ interface PolkadotStore {
 
 // Use only the custom endpoint
 const ENDPOINTS = [
-  'ws://3.219.48.230:9944'
+  'wss://3.219.48.230:9944'
 ];
 
 const DEFAULT_METRICS: NetworkMetrics = {

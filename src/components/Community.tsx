@@ -35,15 +35,15 @@ const socialLinks = [
   },
   {
     label: "Reddit",
-    href: "#",
+    href: "https://www.reddit.com/user/Xorion_Chain/",
     icon: FaReddit,
     description: "Community forum"
   },
   {
     label: "Medium",
-    href: "#",
+    href: "https://medium.com/@xorionchain",
     icon: FaMedium,
-    description: "Read articles"
+    description: "Blog & Announcements"
   }
 ];
 

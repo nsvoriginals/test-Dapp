@@ -10,28 +10,28 @@ import {
 
 const socialLinks = [
   {
-    label: "Twitter",
-    href: "#",
+    label: "X",
+    href: "https://x.com/xorionchain?s=21",
     icon: FaTwitter,
-    description: "Latest updates"
+    description: "Official X (Twitter)"
   },
   {
     label: "Discord",
-    href: "#",
+    href: "https://discord.gg/ucc278yJZt",
     icon: FaDiscord,
-    description: "Join discussions"
+    description: "Community chat"
   },
   {
     label: "Telegram",
-    href: "#",
+    href: "https://t.me/Xorion_Chain",
     icon: FaTelegram,
     description: "Community chat"
   },
   {
     label: "GitHub",
-    href: "#",
+    href: "https://github.com/settings/admin",
     icon: FaGithub,
-    description: "View source code"
+    description: "Source code and issues"
   },
   {
     label: "Reddit",

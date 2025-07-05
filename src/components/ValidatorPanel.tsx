@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,35 +7,31 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LabelList } from 'recharts';
 import { Search, Shield, TrendingUp, Users, Star } from 'lucide-react';
-
-// Dummy validator data
-const validatorsData = [
-  { id: 1, name: '1x2y3z...abcd', operator: '1x2y3z...abcd', votingPower: 2500000, commission: 5, apr: 12.8, uptime: 99.9, status: 'active', nominators: 1250, selfBonded: 150000, description: 'Leading validator with enterprise infrastructure' },
-  { id: 2, name: '4a5b6c...efgh', operator: '4a5b6c...efgh', votingPower: 2200000, commission: 3, apr: 12.5, uptime: 99.8, status: 'active', nominators: 980, selfBonded: 200000, description: 'Institutional grade staking services' },
-  { id: 3, name: '7i8j9k...lmno', operator: '7i8j9k...lmno', votingPower: 1800000, commission: 7, apr: 12.2, uptime: 99.7, status: 'active', nominators: 2100, selfBonded: 80000, description: 'Community-driven validator node' },
-  { id: 4, name: '1p2q3r...stuv', operator: '1p2q3r...stuv', votingPower: 1600000, commission: 4, apr: 12.6, uptime: 99.5, status: 'active', nominators: 750, selfBonded: 120000, description: 'Supporting the ecosystem growth' },
-  { id: 5, name: '4w5x6y...z123', operator: '4w5x6y...z123', votingPower: 1400000, commission: 6, apr: 12.3, uptime: 99.2, status: 'active', nominators: 890, selfBonded: 95000, description: 'Reliable and transparent operations' }
-];
+import { usePolkadotStore } from '@/stores/polkadotStore';
 
 const ValidatorPanel = () => {
+  const { validators, fetchValidators, apiState } = usePolkadotStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('power');
 
+  useEffect(() => {
+    if (apiState.status === 'connected') {
+      fetchValidators();
+    }
+  }, [apiState.status, fetchValidators]);
+
   // Memoized expensive calculations
   const filteredValidators = useMemo(() =>
-    validatorsData.filter(validator =>
-      validator.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      validator.operator.toLowerCase().includes(searchTerm.toLowerCase())
-    ), [searchTerm]
+    validators.filter(validator =>
+      validator.address.toLowerCase().includes(searchTerm.toLowerCase())
+    ), [validators, searchTerm]
   );
 
   const sortedValidators = useMemo(() => {
     return [...filteredValidators].sort((a, b) => {
       switch (sortBy) {
-        case 'power': return b.votingPower - a.votingPower;
+        case 'power': return parseInt(b.totalStake) - parseInt(a.totalStake);
         case 'commission': return a.commission - b.commission;
-        case 'apr': return b.apr - a.apr;
-        case 'uptime': return b.uptime - a.uptime;
         default: return 0;
       }
     });
@@ -45,16 +41,14 @@ const ValidatorPanel = () => {
     address.length > 12 ? `${address.slice(0, 6)}...${address.slice(-4)}` : address;
 
   const performanceData = useMemo(() => filteredValidators.slice(0, 5).map(v => ({
-    name: abbreviate(v.name),
-    uptime: v.uptime,
-    apr: v.apr,
-    power: v.votingPower / 1000000
+    name: abbreviate(v.address),
+    power: parseInt(v.totalStake) / 1000000
   })), [filteredValidators]);
 
   // Memoized totals/averages
-  const totalNominators = useMemo(() => validatorsData.reduce((sum, v) => sum + v.nominators, 0), []);
-  const avgCommission = useMemo(() => (validatorsData.length ? (validatorsData.reduce((sum, v) => sum + v.commission, 0) / validatorsData.length).toFixed(1) : '0'), []);
-  const avgUptime = useMemo(() => (validatorsData.length ? (validatorsData.reduce((sum, v) => sum + v.uptime, 0) / validatorsData.length).toFixed(1) : '0'), []);
+  const totalNominators = useMemo(() => validators.reduce((sum, v) => sum + v.nominators, 0), [validators]);
+  const avgCommission = useMemo(() => (validators.length ? (validators.reduce((sum, v) => sum + v.commission, 0) / validators.length).toFixed(1) : '0'), [validators]);
+  const avgUptime = 'N/A'; // Not available in real data
 
   // useCallback for handlers
   const handleSearch = useCallback((e) => setSearchTerm(e.target.value), []);
@@ -88,7 +82,7 @@ const ValidatorPanel = () => {
           </CardHeader>
           <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
             <div className="text-lg sm:text-2xl font-bold text-foreground">
-              {validatorsData.length}
+              {validators.length}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Active validators</p>
           </CardContent>
@@ -133,7 +127,7 @@ const ValidatorPanel = () => {
           </CardHeader>
           <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
             <div className="text-lg sm:text-2xl font-bold text-foreground">
-              {avgUptime}%
+              {avgUptime}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Network reliability</p>
           </CardContent>
@@ -197,19 +191,17 @@ const ValidatorPanel = () => {
                   
                   <Tooltip
                     contentStyle={{
-                      background: 'hsl(var(--card))',
-                      color: 'hsl(var(--foreground))',
+                      background: 'rgba(20, 20, 30, 0.95)',
+                      color: '#fff',
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '8px',
                       fontSize: '12px',
                       minWidth: '120px',
                       boxShadow: '0 4px 6px -1px rgba(0,0,0,0.10)'
                     }}
-                    formatter={(value, name) => {
-                      if (name === 'Uptime %') return [`${value}%`, 'Uptime'];
-                      if (name === 'APR %') return [`${value}%`, 'APR'];
-                      return [value, name];
-                    }}
+                    itemStyle={{ color: '#fff' }}
+                    labelStyle={{ color: '#fff' }}
+                    cursor={{ fill: 'rgba(60, 60, 80, 0.1)' }}
                   />
                   
                   <Legend 
@@ -218,33 +210,17 @@ const ValidatorPanel = () => {
                   
                   <Bar
                     yAxisId="left"
-                    dataKey="uptime"
+                    dataKey="power"
                     fill="url(#primaryGradient)"
-                    name="Uptime %"
+                    name="Voting Power"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={40}
                   >
                     <LabelList 
-                      dataKey="uptime" 
+                      dataKey="power" 
                       position="top" 
-                      formatter={(v) => `${v}%`}
+                      formatter={(v) => `${v}M`}
                       style={{ fontSize: '10px', fontWeight: 600, fill: '#3b82f6' }}
-                    />
-                  </Bar>
-                  
-                  <Bar
-                    yAxisId="right"
-                    dataKey="apr"
-                    fill="url(#accentGradient)"
-                    name="APR %"
-                    radius={[4, 4, 0, 0]}
-                    maxBarSize={40}
-                  >
-                    <LabelList 
-                      dataKey="apr" 
-                      position="top" 
-                      formatter={(v) => `${v}%`}
-                      style={{ fontSize: '10px', fontWeight: 600, fill: '#10b981' }}
                     />
                   </Bar>
                 </BarChart>
@@ -292,20 +268,12 @@ const ValidatorPanel = () => {
                 Commission
               </Button>
               <Button 
-                variant={sortBy === 'apr' ? 'default' : 'outline'} 
-                onClick={() => handleSort('apr')}
+                variant={sortBy === 'nominators' ? 'default' : 'outline'} 
+                onClick={() => handleSort('nominators')}
                 size="sm"
                 className="text-xs"
               >
-                APR
-              </Button>
-              <Button 
-                variant={sortBy === 'uptime' ? 'default' : 'outline'} 
-                onClick={() => handleSort('uptime')}
-                size="sm"
-                className="text-xs"
-              >
-                Uptime
+                Nominators
               </Button>
               {searchTerm && (
                 <Button 
@@ -342,59 +310,47 @@ const ValidatorPanel = () => {
                       Commission
                     </TableHead>
                     <TableHead className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                      APR
-                    </TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                      Uptime
-                    </TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                      Status
-                    </TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground whitespace-nowrap">
                       Nominators
                     </TableHead>
                     <TableHead className="text-xs font-medium text-muted-foreground whitespace-nowrap">
                       Self-Bonded
                     </TableHead>
                     <TableHead className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                      Description
+                      Total Stake
+                    </TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                      Status
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sortedValidators.map((validator) => (
                     <TableRow 
-                      key={validator.id} 
+                      key={validator.address} 
                       className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
                       <TableCell className="font-mono text-xs text-foreground max-w-[100px] truncate">
-                        {validator.name}
+                        {validator.address}
                       </TableCell>
                       <TableCell className="text-xs text-foreground whitespace-nowrap">
-                        {formatPower(validator.votingPower)}
+                        {formatPower(validator.totalStake)}
                       </TableCell>
                       <TableCell className="text-xs text-foreground whitespace-nowrap">
                         {validator.commission}%
                       </TableCell>
                       <TableCell className="text-xs text-foreground whitespace-nowrap">
-                        {validator.apr}%
+                        {validator.nominators}
                       </TableCell>
                       <TableCell className="text-xs text-foreground whitespace-nowrap">
-                        {validator.uptime}%
+                        {formatPower(validator.selfBonded)}
+                      </TableCell>
+                      <TableCell className="text-xs text-foreground whitespace-nowrap">
+                        {formatPower(validator.totalStake)}
                       </TableCell>
                       <TableCell>
                         <Badge className={`text-xs border ${getStatusColor(validator.status)}`}>
                           {validator.status}
                         </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs text-foreground whitespace-nowrap">
-                        {validator.nominators.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-xs text-foreground whitespace-nowrap">
-                        {formatPower(validator.selfBonded)}
-                      </TableCell>
-                      <TableCell className="text-xs text-foreground max-w-[200px] truncate">
-                        {validator.description}
                       </TableCell>
                     </TableRow>
                   ))}

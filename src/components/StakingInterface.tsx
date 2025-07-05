@@ -13,6 +13,12 @@ import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-da
 import { InjectedAccountWithMeta } from '@polkadot/extension-inject/types';
 import { formatBalance } from '@polkadot/util';
 import { cn } from '@/lib/utils';
+import AccountSelector from './AccountSelector';
+import StakingOverview from './StakingOverview';
+import StakingActions from './StakingActions';
+import DelegationDistributionChart from './DelegationDistributionChart';
+
+// MAIN STAKING INTERFACE COMPONENT, THIS IS WHERE STAKING HAPPENS
 
 interface Validator {
   accountId: string;
@@ -39,7 +45,7 @@ const StakingInterface = () => {
   const [accounts, setAccounts] = useState<InjectedAccountWithMeta[]>([]);
   const [loading, setLoading] = useState(false);
   
-  // Get API state from store
+  // GET API STATE FROM STORE, PULLS POLKADOT API
   const { apiState, api } = usePolkadotStore();
   
   // Real data states
@@ -52,7 +58,7 @@ const StakingInterface = () => {
   });
   const [balance, setBalance] = useState<string>('0');
 
-  // Enable extension and fetch accounts
+  // ENABLE EXTENSION AND FETCH ACCOUNTS, LOADS WALLET ACCOUNTS
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
@@ -67,7 +73,7 @@ const StakingInterface = () => {
     fetchAccounts();
   }, []);
 
-  // Fetch validators
+  // FETCH VALIDATORS, LOADS VALIDATOR DATA FROM API
   useEffect(() => {
     const fetchValidators = async () => {
       if (!api || apiState.status !== 'connected') return;
@@ -104,7 +110,7 @@ const StakingInterface = () => {
     fetchValidators();
   }, [api, apiState.status]);
 
-  // Fetch user staking data
+  // FETCH USER STAKING DATA, LOADS USER'S STAKING INFO
   useEffect(() => {
     const fetchUserStaking = async () => {
       if (!api || apiState.status !== 'connected' || !selectedAccount) return;
@@ -128,15 +134,15 @@ const StakingInterface = () => {
         // Fetch balance
         const { data: { free }}: any = await api.query.system.account(selectedAccount.address);
         setBalance(free.toHuman());
-        console.log('✅ User staking data fetched');
+        console.log(' User staking data fetched');
       } catch (e) {
-        console.error('❌ Error fetching user staking data:', e);
+        console.error(' Error fetching user staking data:', e);
       }
     };
     fetchUserStaking();
   }, [api, apiState.status, selectedAccount]);
 
-  // Handle delegation
+  // HANDLE DELEGATION, STAKES TOKENS TO VALIDATOR
   const handleStake = async () => {
     if (!api || apiState.status !== 'connected' || !selectedAccount) {
       toast({ title: 'Not connected', description: 'Please connect your wallet first', variant: 'destructive' });
@@ -182,7 +188,7 @@ const StakingInterface = () => {
     }
   };
 
-  // Handle redelegation
+  // HANDLE REDELEGATION, MOVES STAKE TO ANOTHER VALIDATOR
   const handleRedelegate = async () => {
     if (!api || apiState.status !== 'connected' || !selectedAccount) {
       toast({ title: 'Not connected', description: 'Please connect your wallet first', variant: 'destructive' });
@@ -228,7 +234,7 @@ const StakingInterface = () => {
     }
   };
 
-  // Handle undelegation
+  // HANDLE UNDELEGATION, UNSTAKES TOKENS
   const handleUndelegate = async () => {
     if (!api || apiState.status !== 'connected' || !selectedAccount) {
       toast({ title: 'Not connected', description: 'Please connect your wallet first', variant: 'destructive' });
@@ -380,277 +386,41 @@ const StakingInterface = () => {
         </div>
 
         {/* Account Selection */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <FaWallet className="w-5 h-5 text-primary" />
-              <span>Wallet Connection</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-foreground">Select Account</label>
-                <Select value={selectedAccount?.address} onValueChange={(address) => {
-                  const account = accounts.find(acc => acc.address === address);
-                  setSelectedAccount(account || null);
-                }}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an account" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map((account) => (
-                      <SelectItem key={account.address} value={account.address} title={account.address}>
-                        <div className="truncate">
-                          {account.meta.name || `${account.address.slice(0, 8)}...${account.address.slice(-6)}`}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {selectedAccount && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="min-w-0">
-                    <label className="text-sm font-medium text-foreground">Address</label>
-                    <div className="text-sm text-muted-foreground font-mono bg-muted p-2 rounded">
-                      <div className="truncate" title={selectedAccount.address}>
-                        {selectedAccount.address}
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Balance</label>
-                    <div className="text-2xl font-bold text-foreground">
-                      {formatBalance(balance, { decimals: 10 })} XOR
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <AccountSelector
+          accounts={accounts}
+          selectedAccount={selectedAccount}
+          setSelectedAccount={setSelectedAccount}
+          balance={balance}
+        />
 
         {/* Staking Overview */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <FaShieldAlt className="w-5 h-5 text-primary" />
-              <span>Staking Overview</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-foreground">
-                  {formatBalance(userStaking.totalStaked, { decimals: 10 })} XOR
-                </div>
-                <div className="text-sm text-muted-foreground">Total Staked</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-foreground">
-                  {formatBalance(userStaking.totalRewards, { decimals: 10 })} XOR
-                </div>
-                <div className="text-sm text-muted-foreground">Total Rewards</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-foreground">
-                  {formatBalance(userStaking.pendingRewards, { decimals: 10 })} XOR
-                </div>
-                <div className="text-sm text-muted-foreground">Pending Rewards</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-foreground">
-                  {userStaking.delegations.length}
-                </div>
-                <div className="text-sm text-muted-foreground">Active Delegations</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StakingOverview userStaking={userStaking} />
 
         {/* Staking Actions */}
-        <Tabs defaultValue="stake" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="stake">Stake</TabsTrigger>
-            <TabsTrigger value="redelegate">Redelegate</TabsTrigger>
-            <TabsTrigger value="unstake">Unstake</TabsTrigger>
-            <TabsTrigger value="rewards">Rewards</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="stake" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <FaArrowUp className="w-5 h-5 text-primary" />
-                  <span>Delegate XOR</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground">Select Validator</label>
-                  <Select value={selectedValidator} onValueChange={setSelectedValidator}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a validator" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {validators.map((validator) => (
-                        <SelectItem key={validator.accountId} value={validator.accountId} title={validator.accountId}>
-                          <div className="truncate">
-                            {`${validator.accountId.slice(0, 8)}...${validator.accountId.slice(-6)} (${validator.commission}% commission)`}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium text-foreground">Amount (XOR)</label>
-                  <Input
-                    type="text"
-                    placeholder="Enter amount to stake"
-                    value={stakeAmount}
-                    onChange={(e) => setStakeAmount(e.target.value)}
-                  />
-                </div>
-                
-                <Button onClick={handleStake} disabled={loading || !stakeAmount || !selectedValidator} className="w-full">
-                  {loading ? 'Staking...' : 'Stake XOR'}
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="redelegate" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <FaArrowUp className="w-5 h-5 text-primary" />
-                  <span>Redelegate XOR</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground">Select New Validator</label>
-                  <Select value={selectedValidator} onValueChange={setSelectedValidator}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a validator" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {validators.map((validator) => (
-                        <SelectItem key={validator.accountId} value={validator.accountId} title={validator.accountId}>
-                          <div className="truncate">
-                            {`${validator.accountId.slice(0, 8)}...${validator.accountId.slice(-6)} (${validator.commission}% commission)`}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium text-foreground">Amount (XOR)</label>
-                  <Input
-                    type="text"
-                    placeholder="Enter amount to redelegate"
-                    value={redelegateAmount}
-                    onChange={(e) => setRedelegateAmount(e.target.value)}
-                  />
-                </div>
-                
-                <Button onClick={handleRedelegate} disabled={loading || !redelegateAmount || !selectedValidator} className="w-full">
-                  {loading ? 'Redelegating...' : 'Redelegate XOR'}
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="unstake" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <FaArrowDown className="w-5 h-5 text-primary" />
-                  <span>Unstake XOR</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground">Amount (XOR)</label>
-                  <Input
-                    type="text"
-                    placeholder="Enter amount to unstake"
-                    value={undelegateAmount}
-                    onChange={(e) => setUndelegateAmount(e.target.value)}
-                  />
-                </div>
-                
-                <Button onClick={handleUndelegate} disabled={loading || !undelegateAmount} className="w-full">
-                  {loading ? 'Unstaking...' : 'Unstake XOR'}
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="rewards" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <FaCoins className="w-5 h-5 text-primary" />
-                  <span>Claim Rewards</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-foreground mb-2">
-                    {formatBalance(userStaking.pendingRewards, { decimals: 10 })} XOR
-                  </div>
-                  <div className="text-sm text-muted-foreground">Available Rewards</div>
-                </div>
-                
-                <Button onClick={handleClaimRewards} disabled={loading || parseFloat(userStaking.pendingRewards) === 0} className="w-full">
-                  {loading ? 'Claiming...' : 'Claim Rewards'}
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        <StakingActions
+          validators={validators}
+          selectedValidator={selectedValidator}
+          setSelectedValidator={setSelectedValidator}
+          stakeAmount={stakeAmount}
+          setStakeAmount={setStakeAmount}
+          redelegateAmount={redelegateAmount}
+          setRedelegateAmount={setRedelegateAmount}
+          undelegateAmount={undelegateAmount}
+          setUndelegateAmount={setUndelegateAmount}
+          loading={loading}
+          handleStake={handleStake}
+          handleRedelegate={handleRedelegate}
+          handleUndelegate={handleUndelegate}
+          userStaking={userStaking}
+          handleClaimRewards={handleClaimRewards}
+        />
 
         {/* Delegation Distribution Chart */}
         {userStaking.delegations.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <FaChartLine className="w-5 h-5 text-primary" />
-                <span>Delegation Distribution</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={stakingDistribution}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {stakingDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+          <DelegationDistributionChart
+            stakingDistribution={stakingDistribution}
+            CustomTooltip={CustomTooltip}
+          />
         )}
       </div>
     </div>

@@ -103,7 +103,7 @@ const NavigationBar = ({ tabs, activeTab, setActiveTab }) => {
   );
 };
 
-// Main App Component
+// STARTING POINT
 const Index = () => {
   const [activeTab, setActiveTab] = useState('overview');
 

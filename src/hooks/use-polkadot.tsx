@@ -33,11 +33,15 @@ class PersistentPolkadotApi {
   private retryDelay = 2000;
   private maxLatency = 1000; // 1 second
 
-  private constructor(endpoints: string[] = [
-    'wss://rpc.polkadot.io',
-    'wss://polkadot.api.onfinality.io/public-ws',
-    'wss://polkadot-rpc.dwellir.com'
-  ]) {
+  private constructor(endpoints: string[] = (
+    import.meta.env.VITE_POLKADOT_ENDPOINTS
+      ? import.meta.env.VITE_POLKADOT_ENDPOINTS.split(',')
+      : [
+          'wss://rpc.polkadot.io',
+          'wss://polkadot.api.onfinality.io/public-ws',
+          'wss://polkadot-rpc.dwellir.com'
+        ]
+  )) {
     this.endpoints = endpoints;
     this.setupHealthMonitoring();
     this.connect();

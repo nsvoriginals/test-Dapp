@@ -10,10 +10,10 @@ const footerLinks = [
 ];
 
 const socialLinks = [
-  { href: "https://discord.gg/", label: "Discord", icon: FaDiscord },
-  { href: "https://twitter.com/", label: "Twitter", icon: FaTwitter },
-  { href: "https://github.com/", label: "GitHub", icon: FaGithub },
-  { href: "https://t.me/", label: "Telegram", icon: FaTelegramPlane },
+  { href: "https://x.com/xorionchain?s=21", label: "X", icon: FaTwitter },
+  { href: "https://discord.gg/ucc278yJZt", label: "Discord", icon: FaDiscord },
+  { href: "https://t.me/Xorion_Chain", label: "Telegram", icon: FaTelegramPlane },
+  { href: "https://github.com/settings/admin", label: "GitHub", icon: FaGithub },
 ];
 
 export default function Footer() {

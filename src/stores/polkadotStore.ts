@@ -159,7 +159,7 @@ interface PolkadotStore {
 const ENDPOINTS = [
   // Try both protocols for your custom endpoint
   
-  'ws://3.219.48.230:9944',
+  'wss://ws-proxy-latest-jds3.onrender.com',
   
  
 ];
@@ -341,13 +341,13 @@ export const usePolkadotStore = create<PolkadotStore>()(
           
           return;
           
-        } catch (error: any) {
-          console.warn(`❌ Failed to connect to ${targetEndpoint}:`, error.message);
-          setApiState({ status: 'error', lastError: error.message });
-          
-          // Try next endpoint
-          continue;
-        }
+                  } catch (error: any) {
+            console.warn(`❌ Failed to connect to ${targetEndpoint}:`, error.message);
+            setApiState({ status: 'error', lastError: error.message });
+            
+            // Try next endpoint
+            continue;
+          }
       }
       
       // If we get here, all endpoints failed

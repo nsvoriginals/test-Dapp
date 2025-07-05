@@ -156,12 +156,13 @@ interface PolkadotStore {
   validators: ValidatorInfo[];
   fetchValidators: () => Promise<void>;
 }
-
-// Use only the custom endpoint
 const ENDPOINTS = [
-  'wss://3.219.48.230:9944'
+  // Try both protocols for your custom endpoint
+  
+  'ws://3.219.48.230:9944',
+  
+ 
 ];
-
 const DEFAULT_METRICS: NetworkMetrics = {
   validatorsOnline: 0,
   totalValidators: 0,

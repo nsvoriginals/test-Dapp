@@ -1,24 +1,102 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { usePolkadotStore } from '@/stores/polkadotStore';
 
-const LandingFeatures = () => (
+const LandingFeatures = () => {
+  const { 
+    networkMetrics, 
+    apiState, 
+    fetchNetworkData, 
+    isLoading 
+  } = usePolkadotStore();
+
+  useEffect(() => {
+    // Fetch network data when component mounts
+    if (apiState.status === 'connected') {
+      fetchNetworkData();
+    }
+  }, [apiState.status, fetchNetworkData]);
+
+  // Format numbers for display
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M`;
+    } else if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}K`;
+    }
+    return num.toString();
+  };
+
+  const formatCurrency = (value: string) => {
+    const num = parseFloat(value) / 1e12; // Assuming 12 decimal places
+    if (num >= 1000000) {
+      return `$${(num / 1000000).toFixed(1)}M`;
+    } else if (num >= 1000) {
+      return `$${(num / 1000).toFixed(1)}K`;
+    }
+    return `$${num.toFixed(2)}`;
+  };
+
+  return (
   <section id="features" className="py-8 px-4 sm:px-6 lg:px-8 bg-background">
     <div className="max-w-6xl mx-auto">
       <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 text-center">Powerful Features</h2>
+      
+      {/* Connection Status */}
+      <div className="flex justify-center mb-6">
+        <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
+          apiState.status === 'connected' 
+            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+            : apiState.status === 'connecting'
+            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+        }`}>
+          <div className={`w-2 h-2 rounded-full mr-2 ${
+            apiState.status === 'connected' ? 'bg-green-500' : 
+            apiState.status === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
+          }`}></div>
+          {apiState.status === 'connected' ? 'Live Data' : 
+           apiState.status === 'connecting' ? 'Connecting...' : 'Offline'}
+        </div>
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
         <div className="bg-card rounded-xl p-6 flex flex-col items-center text-center shadow">
-          <div className="text-3xl font-bold text-primary mb-1">297</div>
+          <div className="text-3xl font-bold text-primary mb-1">
+            {isLoading ? (
+              <div className="animate-pulse bg-muted h-8 w-16 rounded"></div>
+            ) : (
+              formatNumber(networkMetrics.validatorsOnline)
+            )}
+          </div>
           <div className="text-sm text-muted-foreground">Validators Online</div>
         </div>
         <div className="bg-card rounded-xl p-6 flex flex-col items-center text-center shadow">
-          <div className="text-3xl font-bold text-primary mb-1">13.2%</div>
+          <div className="text-3xl font-bold text-primary mb-1">
+            {isLoading ? (
+              <div className="animate-pulse bg-muted h-8 w-16 rounded"></div>
+            ) : (
+              `${networkMetrics.stakingAPR.toFixed(1)}%`
+            )}
+          </div>
           <div className="text-sm text-muted-foreground">Staking APR</div>
         </div>
         <div className="bg-card rounded-xl p-6 flex flex-col items-center text-center shadow">
-          <div className="text-3xl font-bold text-primary mb-1">$987M</div>
+          <div className="text-3xl font-bold text-primary mb-1">
+            {isLoading ? (
+              <div className="animate-pulse bg-muted h-8 w-16 rounded"></div>
+            ) : (
+              formatCurrency(networkMetrics.totalValueLocked)
+            )}
+          </div>
           <div className="text-sm text-muted-foreground">Total Value Locked</div>
         </div>
         <div className="bg-card rounded-xl p-6 flex flex-col items-center text-center shadow">
-          <div className="text-3xl font-bold text-primary mb-1">1,234,567</div>
+          <div className="text-3xl font-bold text-primary mb-1">
+            {isLoading ? (
+              <div className="animate-pulse bg-muted h-8 w-16 rounded"></div>
+            ) : (
+              formatNumber(networkMetrics.totalTransactions)
+            )}
+          </div>
           <div className="text-sm text-muted-foreground">Transactions</div>
         </div>
       </div>
@@ -75,5 +153,7 @@ const LandingFeatures = () => (
       </div>
     </div>
   </section>
-);
+  );
+};
+
 export default LandingFeatures; 

@@ -1,6 +1,22 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { usePolkadotStore } from '@/stores/polkadotStore';
 
-const LandingHero = ({ navigate }) => (
+const LandingHero = ({ navigate }) => {
+  const { 
+    networkMetrics, 
+    apiState, 
+    fetchNetworkData, 
+    isLoading 
+  } = usePolkadotStore();
+
+  useEffect(() => {
+    // Fetch network data when component mounts
+    if (apiState.status === 'connected') {
+      fetchNetworkData();
+    }
+  }, [apiState.status, fetchNetworkData]);
+
+  return (
   <section className="pt-16 pb-8 px-4 sm:px-6 lg:px-8 bg-background" id="hero">
     <div className="max-w-4xl mx-auto text-center">
       <div className="inline-flex items-center px-4 py-2 bg-card rounded-full text-sm font-medium text-primary mb-8">
@@ -38,7 +54,56 @@ const LandingHero = ({ navigate }) => (
           </span>
         ))}
       </div>
+      
+      {/* Real-time Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12 max-w-4xl mx-auto">
+        <div className="bg-card/80 backdrop-blur-sm rounded-xl p-4 border border-border">
+          <div className="text-2xl font-bold text-primary mb-1">
+            {isLoading ? (
+              <div className="animate-pulse bg-muted h-6 w-8 rounded"></div>
+            ) : (
+              networkMetrics.validatorsOnline
+            )}
+          </div>
+          <div className="text-sm text-muted-foreground">Validators</div>
+        </div>
+        
+        <div className="bg-card/80 backdrop-blur-sm rounded-xl p-4 border border-border">
+          <div className="text-2xl font-bold text-primary mb-1">
+            {isLoading ? (
+              <div className="animate-pulse bg-muted h-6 w-8 rounded"></div>
+            ) : (
+              `${networkMetrics.avgBlockTime}s`
+            )}
+          </div>
+          <div className="text-sm text-muted-foreground">Block Time</div>
+        </div>
+        
+        <div className="bg-card/80 backdrop-blur-sm rounded-xl p-4 border border-border">
+          <div className="text-2xl font-bold text-primary mb-1">
+            {isLoading ? (
+              <div className="animate-pulse bg-muted h-6 w-8 rounded"></div>
+            ) : (
+              `${networkMetrics.networkHealth.toFixed(1)}%`
+            )}
+          </div>
+          <div className="text-sm text-muted-foreground">Network Health</div>
+        </div>
+        
+        <div className="bg-card/80 backdrop-blur-sm rounded-xl p-4 border border-border">
+          <div className="text-2xl font-bold text-primary mb-1">
+            {isLoading ? (
+              <div className="animate-pulse bg-muted h-6 w-8 rounded"></div>
+            ) : (
+              networkMetrics.activeAddresses
+            )}
+          </div>
+          <div className="text-sm text-muted-foreground">Active Addresses</div>
+        </div>
+      </div>
     </div>
   </section>
-);
+  );
+};
+
 export default LandingHero; 

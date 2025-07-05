@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from "next-themes";
+import { usePolkadotStore } from '@/stores/polkadotStore';
 import Footer from '@/components/Footer';
 import About from '@/components/About';
 import CommunitySection from '@/components/Community';
@@ -12,6 +13,14 @@ const LandingPage = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
+  const { connect, apiState } = usePolkadotStore();
+
+  // Connect to the blockchain when landing page loads
+  useEffect(() => {
+    if (apiState.status === 'disconnected') {
+      connect();
+    }
+  }, [connect, apiState.status]);
 
   const handleNavClick = (e, href) => {
     e.preventDefault();

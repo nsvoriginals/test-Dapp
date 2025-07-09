@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { ApiPromise, WsProvider } from '@polkadot/api';
+import { Metadata } from '@polkadot/types';
+import { TypeRegistry } from '@polkadot/types/create';
+import { precompiledMetadata } from '../metadata';
 
 export interface ApiState {
   api: ApiPromise | null;
@@ -159,7 +162,7 @@ interface PolkadotStore {
 const ENDPOINTS = [
   // Try both protocols for your custom endpoint
   
-  'wss://ws-proxy-latest-jds3.onrender.com',
+  'ws://3.219.48.230:9944',
   
  
 ];
@@ -269,32 +272,38 @@ export const usePolkadotStore = create<PolkadotStore>()(
       
       for (const targetEndpoint of endpointsToTry) {
         try {
-          console.log('🔌 Connecting to:', targetEndpoint);
+          console.log('Connecting to:', targetEndpoint);
           
           // Clean up existing provider
           if (currentProvider) {
             try {
               await currentProvider.disconnect();
             } catch (error) {
-              console.warn('Error disconnecting previous provider:', error);
+              console.warn('Failed to disconnect previous provider:', error);
             }
           }
           
-          // Create new provider with better configuration
+          // Create new provider for the selected endpoint
           const provider = new WsProvider(targetEndpoint, 30000);
           currentProvider = provider;
-          
+
+          // Use precompiled metadata as a map (update genesisHash and specVersion for your chain)
+          const metadata: Record<string, `0x${string}`> = {
+            // Example: replace with your actual values
+            '0x91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3-1000': precompiledMetadata as `0x${string}`
+          };
+
+          // Create the API instance with the provider and precompiled metadata
           const api = await ApiPromise.create({
             provider,
-            throwOnConnect: false,
-            noInitWarn: true
+            metadata,
           });
 
           await api.isReady;
-          
-          // Test connection with a simple call
+
+          // Test the connection with a simple system.chain call
           await api.rpc.system.chain();
-          
+
           setApi(api);
           setApiState({
             status: 'connected',
@@ -304,41 +313,37 @@ export const usePolkadotStore = create<PolkadotStore>()(
             endpoint: targetEndpoint,
             lastConnected: new Date()
           });
-          
-          // Set up connection event listeners
+
+          // Set up connection event listeners for provider
           provider.on('connected', () => {
-            console.log('🔗 WebSocket connected to', targetEndpoint);
+            console.log('WebSocket connected to', targetEndpoint);
             setApiState({ status: 'connected', lastConnected: new Date() });
           });
-          
+
           provider.on('disconnected', () => {
-            console.log('🔌 WebSocket disconnected from', targetEndpoint);
+            console.log('WebSocket disconnected from', targetEndpoint);
             setApiState({ status: 'disconnected' });
-            
-            // Auto-reconnect after a delay
+            // Attempt to reconnect after a delay if disconnected
             if (reconnectTimeout) clearTimeout(reconnectTimeout);
             reconnectTimeout = setTimeout(() => {
               const { apiState } = get();
               if (apiState.status === 'disconnected') {
-                console.log('🔄 Auto-reconnecting...');
+                console.log('Attempting to auto-reconnect...');
                 get().connect();
               }
             }, 5000);
           });
-          
+
           provider.on('error', (error) => {
-            console.error('❌ WebSocket error:', error);
+            console.error('WebSocket error:', error);
             setApiState({ status: 'error', lastError: error.message });
           });
-          
+
           setLoading(false);
-          console.log('✅ Connected to Polkadot API:', targetEndpoint);
-          
-          // Fetch initial data
-          setTimeout(() => {
-            get().fetchNetworkData();
-          }, 1000);
-          
+          console.log('Connected to Polkadot API:', targetEndpoint);
+          // Immediately fetch initial network data after connecting
+          get().fetchNetworkData();
+
           return;
           
                   } catch (error: any) {
@@ -427,14 +432,18 @@ export const usePolkadotStore = create<PolkadotStore>()(
           setFetching(false);
           return;
         }
+        // Profiling: log start
+        const t0 = performance.now();
         // Fetch real data
         const [validatorsEntries, activeEraResult, lastHeaderResult, chainResult, finalizedHeadResult] = await Promise.all([
-          api.query.staking.validators.entries(),
-          api.query.staking.activeEra(),
-          api.rpc.chain.getHeader(),
-          api.rpc.system.chain(),
-          api.rpc.chain.getFinalizedHead()
+          (console.time('validators.entries'), api.query.staking.validators.entries().then(r => { console.timeEnd('validators.entries'); return r; })),
+          (console.time('activeEra'), api.query.staking.activeEra().then(r => { console.timeEnd('activeEra'); return r; })),
+          (console.time('getHeader'), api.rpc.chain.getHeader().then(r => { console.timeEnd('getHeader'); return r; })),
+          (console.time('system.chain'), api.rpc.system.chain().then(r => { console.timeEnd('system.chain'); return r; })),
+          (console.time('getFinalizedHead'), api.rpc.chain.getFinalizedHead().then(r => { console.timeEnd('getFinalizedHead'); return r; })),
         ]);
+        const t1 = performance.now();
+        console.log('Initial parallel RPCs completed in', (t1 - t0).toFixed(1), 'ms');
         // Validators
         const totalValidators = validatorsEntries.length;
         const validatorsOnline = validatorsEntries.filter(([_, prefs]) => {
@@ -449,21 +458,35 @@ export const usePolkadotStore = create<PolkadotStore>()(
         // Block time
         let avgBlockTime = 0;
         try {
+          // Fetch the last 10 blocks in parallel and extract their timestamps
+          const t2 = performance.now();
           const currentHeader = lastHeaderResult;
           const currentBlockNumber = currentHeader.number.toNumber();
           const blockNumbers = Array.from({ length: 10 }, (_, i) => currentBlockNumber - i);
-          const timestamps = [];
-          for (const blockNumber of blockNumbers) {
-            const blockHash = await api.rpc.chain.getBlockHash(blockNumber);
-            const block = await api.rpc.chain.getBlock(blockHash);
+          // Parallel fetch block hashes
+          console.time('blockHashes');
+          const blockHashes = await Promise.all(
+            blockNumbers.map(blockNumber => api.rpc.chain.getBlockHash(blockNumber))
+          );
+          console.timeEnd('blockHashes');
+          // Parallel fetch blocks
+          console.time('blocks');
+          const blocks = await Promise.all(
+            blockHashes.map(blockHash => api.rpc.chain.getBlock(blockHash))
+          );
+          console.timeEnd('blocks');
+          const t3 = performance.now();
+          console.log('Block hashes and blocks fetched in', (t3 - t2).toFixed(1), 'ms');
+          const timestamps = blocks.map(block => {
             const timestampExtrinsic = block.block.extrinsics.find(ext =>
               ext.method.section === 'timestamp' && ext.method.method === 'set'
             );
             if (timestampExtrinsic) {
               const timestampArg = timestampExtrinsic.method.args[0];
-              timestamps.push(Number(timestampArg.toString()));
+              return Number(timestampArg.toString());
             }
-          }
+            return undefined;
+          }).filter(Boolean) as number[];
           if (timestamps.length > 1) {
             const timeDiffs = [];
             for (let i = 1; i < timestamps.length; i++) {

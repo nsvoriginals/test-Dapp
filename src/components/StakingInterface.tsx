@@ -5,7 +5,16 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { FaDollarSign, FaChartLine, FaShieldAlt, FaClock, FaStethoscope, FaUsers, FaCoins, FaArrowUp, FaArrowDown, FaWallet } from 'react-icons/fa';
+import { FaDollarSign } from 'react-icons/fa6';
+import { FaChartLine } from 'react-icons/fa6';
+import { FaShieldAlt } from 'react-icons/fa6';
+import { FaClock } from 'react-icons/fa6';
+import { FaStethoscope } from 'react-icons/fa6';
+import { FaUsers } from 'react-icons/fa6';
+import { FaCoins } from 'react-icons/fa6';
+import { FaArrowUp } from 'react-icons/fa6';
+import { FaArrowDown } from 'react-icons/fa6';
+import { FaWallet } from 'react-icons/fa6';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { usePolkadotStore } from '@/stores/polkadotStore';
@@ -17,6 +26,10 @@ import AccountSelector from './AccountSelector';
 import StakingOverview from './StakingOverview';
 import StakingActions from './StakingActions';
 import DelegationDistributionChart from './DelegationDistributionChart';
+import { u128 } from '@polkadot/types';
+import { PalletStakingValidatorPrefs, PalletStakingStakingLedger, PalletStakingNominations } from '@polkadot/types/lookup';
+import { TooltipProps } from 'recharts';
+import { FrameSystemAccountInfo } from '@polkadot/types/lookup';
 
 // MAIN STAKING INTERFACE COMPONENT, THIS IS WHERE STAKING HAPPENS
 
@@ -80,22 +93,23 @@ const StakingInterface = () => {
       try {
         console.log('👥 Fetching validators for staking...');
         // Fetch active validators
-        const validatorsData = await api.query.staking.validators.entries();
+        const activeValidatorIds = await api.query.session.validators();
         const validatorsList: Validator[] = [];
         
-        for (const [accountId, validatorData] of validatorsData) {
-          const validator = validatorData.toHuman() as any;
-          const account = accountId.args[0].toString();
-          
-          // Get validator's total stake
+        for (const validatorId of activeValidatorIds) {
+          const account = validatorId.toString();
+          const validatorPrefs = await api.query.staking.validators(account);
+          const commission = (validatorPrefs.toHuman() as { commission: string })?.commission;
+
+          // Get validator's total stake and nominators
           const totalStake = await api.query.staking.ledger(account);
           const nominators = await api.query.staking.nominators.entries();
           
           validatorsList.push({
             accountId: account,
-            commission: validator?.commission || 0,
-            totalStake: (totalStake as any).isSome ? (totalStake as any).unwrap().total.toHuman() : '0',
-            ownStake: (totalStake as any).isSome ? (totalStake as any).unwrap().active.toHuman() : '0',
+            commission: parseFloat(commission?.replace('%', '')) || 0,
+            totalStake: (totalStake as unknown as PalletStakingStakingLedger).total.toString(),
+            ownStake: (totalStake as unknown as PalletStakingStakingLedger).active.toString(),
             nominatorCount: nominators.filter(([key]) => key.args[0].toString() === account).length,
             isActive: true
           });
@@ -118,24 +132,24 @@ const StakingInterface = () => {
         console.log('💰 Fetching user staking data...');
         // Fetch user's ledger
         const ledger = await api.query.staking.ledger(selectedAccount.address);
-        if ((ledger as any).isSome) {
-          const ledgerData = (ledger as any).unwrap().toHuman();
+        if ((ledger as unknown as PalletStakingStakingLedger).total) {
+          const ledgerData = (ledger as unknown as PalletStakingStakingLedger).toHuman();
           setUserStaking(prev => ({
             ...prev,
             totalStaked: ledgerData.total || '0',
-            delegations: ledgerData.nominators ? ledgerData.nominators.map((nom: any) => ({
-              validator: nom,
-              amount: '0', // Would need to calculate from individual nominations
-              rewards: '0' // Would need to calculate from rewards
-            })) : []
+            delegations: (ledgerData.nominators as unknown as PalletStakingNominations)?.targets.map((nom: { toString: () => string; }) => ({
+              validator: nom.toString(),
+              amount: '0',
+              rewards: '0'
+            })) || []
           }));
         }
 
         // Fetch balance
-        const { data: { free }}: any = await api.query.system.account(selectedAccount.address);
-        setBalance(free.toHuman());
+        const { data: { free }}: FrameSystemAccountInfo = await api.query.system.account(selectedAccount.address);
+        setBalance(free.toString());
         console.log(' User staking data fetched');
-      } catch (e) {
+      } catch (e: any) {
         console.error(' Error fetching user staking data:', e);
       }
     };
@@ -324,7 +338,7 @@ const StakingInterface = () => {
     color: ['#3b82f6', '#10b981', '#f59e0b'][index % 3]
   }));
 
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
+  const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white border border-gray-200 p-3 rounded shadow-lg">

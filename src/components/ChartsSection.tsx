@@ -3,10 +3,23 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine, AreaChart, Area } from 'recharts';
 import { FaBolt, FaShieldAlt } from 'react-icons/fa';
 
+interface ChartData {
+  time: string;
+  transactions: number;
+  validators: number;
+  networkHealth: number;
+}
+
+interface StakingData {
+  period: string;
+  staked: number;
+  rewards: number;
+}
+
 interface ChartsSectionProps {
   showSkeleton: boolean;
-  chartData: any[];
-  stakingData: any[];
+  chartData: ChartData[];
+  stakingData: StakingData[];
   formatNumber: (num: number) => string;
 }
 
@@ -299,7 +312,18 @@ const ChartsSection: React.FC<ChartsSectionProps> = ({
                       fill: 'hsl(var(--success))',
                       fontSize: 10
                     }}
-                  />
+                  /><ReferenceLine 
+  y={100} 
+  stroke="#00FF00" // bright green
+  strokeDasharray="0" // solid line
+  strokeWidth={3}
+  label={{ 
+    value: '100%', 
+    position: 'insideTopRight',
+    fill: '#00FF00',
+    fontSize: 12
+  }}
+/>
                   {/* Existing 95% threshold line */}
                   <ReferenceLine 
                     y={95} 

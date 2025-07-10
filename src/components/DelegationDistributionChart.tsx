@@ -2,9 +2,11 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { FaChartLine } from 'react-icons/fa';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 
+import { TooltipProps } from 'recharts';
+
 interface DelegationDistributionChartProps {
   stakingDistribution: { name: string; value: number; color: string }[];
-  CustomTooltip: React.FC<any>;
+  CustomTooltip: React.FC<TooltipProps<number, string>>;
 }
 
 const DelegationDistributionChart = ({ stakingDistribution, CustomTooltip }: DelegationDistributionChartProps) => (

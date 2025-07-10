@@ -1,8 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, ReferenceLine } from 'recharts';
-import { FaChartLine, FaUsers, FaClock, FaDollarSign, FaShieldAlt } from 'react-icons/fa';
-import { FaBolt, FaWallet } from 'react-icons/fa6';
+import { FaChartLine } from 'react-icons/fa6';
+import { FaUsers } from 'react-icons/fa6';
+import { FaClock } from 'react-icons/fa6';
+import { FaDollarSign } from 'react-icons/fa6';
+import { FaShieldAlt } from 'react-icons/fa6';
+import { FaBolt } from 'react-icons/fa6';
+import { FaWallet } from 'react-icons/fa6';
 import { cn } from '@/lib/utils';
 import { useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -83,7 +88,7 @@ const NetworkStats = () => {
       // Start data fetch immediately but don't block UI
       fetchNetworkData();
     }
-  }, [apiState.status]); // Remove fetchNetworkData from deps to prevent loops
+  }, [apiState.status, fetchNetworkData, networkMetrics.lastUpdated]); // Remove fetchNetworkData from deps to prevent loops
 
   // GET COLOR FOR STATUS BADGES, GREEN, YELLOW, RED, ETC
   const getStatusColor = (value: number, type: 'validators' | 'health' | 'apr') => {

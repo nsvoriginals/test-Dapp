@@ -11,6 +11,7 @@ import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-da
 import { InjectedAccountWithMeta } from '@polkadot/extension-inject/types';
 import { formatBalance } from '@polkadot/util';
 import { cn } from '@/lib/utils';
+import { FrameSystemAccountInfo } from '@polkadot/types/lookup';
 
 const WalletConnection = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -28,8 +29,8 @@ const WalletConnection = () => {
     if (api && apiState.status === 'connected' && selectedAccount) {
       const fetchBalance = async () => {
         try {
-          const { data: { free }}:any = await api.query.system.account(selectedAccount.address);
-          setBalance(free.toHuman());
+          const { data: { free }}: FrameSystemAccountInfo = await api.query.system.account(selectedAccount.address);
+          setBalance(free.toString());
         } catch (e: any) {
           toast({
             title: "Error fetching balance",

@@ -4,7 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FaArrowRight, FaWallet, FaCoins, FaExchangeAlt, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { FaArrowRight } from 'react-icons/fa6';
+import { FaWallet } from 'react-icons/fa6';
+import { FaCoins } from 'react-icons/fa6';
+import { FaExchangeAlt } from 'react-icons/fa';
+import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { useToast } from '@/hooks/use-toast';
 import { usePolkadotStore } from '@/stores/polkadotStore';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
@@ -12,6 +16,19 @@ import { InjectedAccountWithMeta } from '@polkadot/extension-inject/types';
 import { formatBalance } from '@polkadot/util';
 import { cn } from '@/lib/utils';
 import Footer from './Footer';
+import { u128 } from '@polkadot/types';
+import { FrameSystemAccountInfo } from '@polkadot/types/lookup';
+
+interface TransferHistoryItem {
+  id: number;
+  from: string;
+  to: string;
+  amount: string;
+  token: string;
+  status: string;
+  timestamp: Date;
+  hash: string;
+}
 
 const TransferFunds = () => {
   const { toast } = useToast();
@@ -22,7 +39,7 @@ const TransferFunds = () => {
   const [accounts, setAccounts] = useState<InjectedAccountWithMeta[]>([]);
   const [balance, setBalance] = useState<string>('0');
   const [loading, setLoading] = useState(false);
-  const [transferHistory, setTransferHistory] = useState<any[]>([]);
+  const [transferHistory, setTransferHistory] = useState<TransferHistoryItem[]>([]);
 
   // Get API state from store
   const { apiState, api } = usePolkadotStore();
@@ -47,8 +64,8 @@ const TransferFunds = () => {
     const fetchBalance = async () => {
       if (!api || apiState.status !== 'connected' || !selectedAccount) return;
       try {
-        const { data: { free }}: any = await api.query.system.account(selectedAccount.address);
-        setBalance(free.toHuman());
+        const { data: { free }}: FrameSystemAccountInfo = await api.query.system.account(selectedAccount.address);
+        setBalance(free.toString());
       } catch (e: any) {
         console.error('Error fetching balance:', e);
         setBalance('0');
@@ -102,7 +119,7 @@ const TransferFunds = () => {
         if (status.isInBlock) {
           toast({ title: 'Transfer in block', description: `Included in block: ${status.asInBlock.toString()}` });
         } else if (status.isFinalized) {
-          const transferRecord = {
+          const transferRecord: TransferHistoryItem = {
             id: Date.now(),
             from: selectedAccount.address,
             to: recipient,
@@ -381,4 +398,4 @@ const TransferFunds = () => {
   );
 };
 
-export default TransferFunds; 
+export default TransferFunds;

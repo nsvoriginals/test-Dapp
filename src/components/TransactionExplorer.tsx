@@ -4,7 +4,15 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { FaSearch, FaExternalLinkAlt, FaCopy, FaFilter, FaBars, FaTimes, FaClock, FaCheckCircle, FaTimesCircle, FaInfoCircle, FaArrowLeft } from 'react-icons/fa';
+import { FaSearch } from 'react-icons/fa6';
+import { FaExternalLinkAlt } from 'react-icons/fa6';
+import { FaCopy } from 'react-icons/fa6';
+import { FaFilter } from 'react-icons/fa6';
+import { FaBars } from 'react-icons/fa6';
+import { FaTimes } from 'react-icons/fa6';
+import { FaClock } from 'react-icons/fa6';
+import { FaArrowLeft } from 'react-icons/fa6';
+import { FaCheckCircle, FaTimesCircle, FaInfoCircle } from 'react-icons/fa';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -139,7 +147,7 @@ const TransactionExplorer = () => {
     if (apiState.status === 'connected' && transactionData.lastUpdated === 0) {
       fetchTransactionData();
     }
-  }, [apiState.status]); // Remove fetchTransactionData from deps to prevent loops
+  }, [apiState.status, fetchTransactionData, transactionData.lastUpdated]); // Remove fetchTransactionData from deps to prevent loops
 
   const handleRefresh = () => {
     refreshTransactionData();

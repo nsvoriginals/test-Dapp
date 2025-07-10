@@ -35,4 +35,23 @@ export default defineConfig(() => ({
   define: {
     global: 'globalThis',
   },
+  build: {
+    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          polkadot: [
+            '@polkadot/api',
+            '@polkadot/extension-dapp',
+            '@polkadot/util',
+            '@polkadot/types',
+            '@polkadot/types/lookup',
+            '@polkadot/util-crypto',
+          ],
+          recharts: ['recharts'],
+          reacticons: ['react-icons'],
+        },
+      },
+    },
+  },
 }));

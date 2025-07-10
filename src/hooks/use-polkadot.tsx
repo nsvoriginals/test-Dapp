@@ -91,7 +91,7 @@ class PersistentPolkadotApi {
       // Setup provider event handlers
       this.provider.on('connected', () => this.handleConnected());
       this.provider.on('disconnected', () => this.handleDisconnected());
-      this.provider.on('error', (error: any) => this.handleError(error));
+      this.provider.on('error', (error: Error) => this.handleError(error));
 
       this.api = await ApiPromise.create({
         provider: this.provider,
@@ -103,7 +103,7 @@ class PersistentPolkadotApi {
       // Setup API event handlers
       this.api.on('connected', () => this.handleConnected());
       this.api.on('disconnected', () => this.handleDisconnected());
-      this.api.on('error', (error: any) => this.handleError(error));
+      this.api.on('error', (error: Error) => this.handleError(error));
 
       await this.api.isReady;
       

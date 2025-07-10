@@ -1,9 +1,6 @@
 import { useState } from 'react';
 import NetworkStats from '@/components/NetworkStats';
-import StakingInterface from '@/components/StakingInterface';
-import ValidatorPanel from '@/components/ValidatorPanel';
-import TransactionExplorer from '@/components/TransactionExplorer';
-import TransferFunds from '@/components/TransferFunds';
+import { Suspense, lazy } from 'react';
 import { FaChartLine, FaShieldAlt, FaUsers, FaBolt, FaPaperPlane } from 'react-icons/fa';
 import Header from '@/components/Header';
 import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
@@ -11,6 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import Footer from '@/components/Footer';
 //import NavigationBar from '@/components/NavigationBar';
+
+const StakingInterface = lazy(() => import('@/components/StakingInterface'));
+const ValidatorPanel = lazy(() => import('@/components/ValidatorPanel'));
+const TransactionExplorer = lazy(() => import('@/components/TransactionExplorer'));
+const TransferFunds = lazy(() => import('@/components/TransferFunds'));
 
 const NavigationBar = ({ tabs, activeTab, setActiveTab }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -120,13 +122,29 @@ const Index = () => {
       case 'overview':
         return <NetworkStats />;
       case 'staking':
-        return <StakingInterface />;
+        return (
+          <Suspense fallback={<div>Loading staking...</div>}>
+            <StakingInterface />
+          </Suspense>
+        );
       case 'validators':
-        return <ValidatorPanel />;
+        return (
+          <Suspense fallback={<div>Loading validators...</div>}>
+            <ValidatorPanel />
+          </Suspense>
+        );
       case 'transactions':
-        return <TransactionExplorer />;
+        return (
+          <Suspense fallback={<div>Loading transactions...</div>}>
+            <TransactionExplorer />
+          </Suspense>
+        );
       case 'transfer':
-        return <TransferFunds />;
+        return (
+          <Suspense fallback={<div>Loading transfer...</div>}>
+            <TransferFunds />
+          </Suspense>
+        );
       default:
         return <NetworkStats />;
     }

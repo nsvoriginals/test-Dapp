@@ -62,80 +62,80 @@ const ValidatorPanel = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800';
-      case 'jailed': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800';
-      case 'inactive': return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800';
+      case 'active': return 'bg-gradient-blue-purple text-blue-400 border-blue-800';
+      case 'jailed': return 'bg-gradient-pink-red text-pink-400 border-pink-800';
+      case 'inactive': return 'bg-gradient-purple-indigo text-purple-400 border-purple-800';
+      default: return 'bg-gradient-purple-indigo text-purple-400 border-purple-800';
     }
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-3 sm:p-4 lg:p-6 space-y-6 bg-card">
+    <div className="w-full max-w-7xl mx-auto p-3 sm:p-4 lg:p-6 space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="bg-card border border-border">
+        <Card className="glass-card bg-gradient-to-br from-blue-900/40 to-blue-500/10 border border-blue-500/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
-            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-xs sm:text-sm font-medium text-blue-300">
               Total Validators
             </CardTitle>
-            <Shield className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+            <Shield className="h-3 w-3 sm:h-4 sm:w-4 text-blue-400" />
           </CardHeader>
           <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-            <div className="text-lg sm:text-2xl font-bold text-foreground">
+            <div className="text-lg sm:text-2xl font-bold text-blue-100">
               {validators.length}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Active validators</p>
+            <p className="text-xs text-blue-200 mt-1">Active validators</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-card border border-border">
+        <Card className="glass-card bg-gradient-to-br from-pink-900/40 to-pink-500/10 border border-pink-500/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
-            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-xs sm:text-sm font-medium text-pink-300">
               Avg Commission
             </CardTitle>
-            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-pink-400" />
           </CardHeader>
           <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-            <div className="text-lg sm:text-2xl font-bold text-foreground">
+            <div className="text-lg sm:text-2xl font-bold text-pink-100">
               {avgCommission}%
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Network average</p>
+            <p className="text-xs text-pink-200 mt-1">Network average</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-card border border-border">
+        <Card className="glass-card bg-gradient-to-br from-green-900/40 to-green-500/10 border border-green-500/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
-            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-xs sm:text-sm font-medium text-green-300">
               Total Nominators
             </CardTitle>
-            <Users className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+            <Users className="h-3 w-3 sm:h-4 sm:w-4 text-green-400" />
           </CardHeader>
           <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-            <div className="text-lg sm:text-2xl font-bold text-foreground">
+            <div className="text-lg sm:text-2xl font-bold text-green-100">
               {totalNominators.toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Unique nominators</p>
+            <p className="text-xs text-green-200 mt-1">Unique nominators</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-card border border-border">
+        <Card className="glass-card bg-gradient-to-br from-yellow-900/40 to-yellow-500/10 border border-yellow-500/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
-            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-xs sm:text-sm font-medium text-yellow-300">
               Avg Uptime
             </CardTitle>
-            <Star className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+            <Star className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-400" />
           </CardHeader>
           <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-            <div className="text-lg sm:text-2xl font-bold text-foreground">
+            <div className="text-lg sm:text-2xl font-bold text-yellow-100">
               {avgUptime}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Network reliability</p>
+            <p className="text-xs text-yellow-200 mt-1">Network reliability</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Performance Chart */}
-      <Card className="bg-card border border-border">
+      <Card className="glass-card bg-gradient-to-br from-blue-900/40 to-pink-900/10 border border-blue-500/20">
         <CardHeader className="px-3 sm:px-6 pt-3 sm:pt-6">
           <CardTitle className="text-foreground text-base sm:text-lg">
             Validator Performance Comparison
@@ -231,7 +231,7 @@ const ValidatorPanel = () => {
       </Card>
 
       {/* Validator List */}
-      <Card className="bg-card border border-border">
+      <Card className="glass-card bg-gradient-to-br from-zinc-900/60 to-zinc-800/40 border border-white/10">
         <CardHeader className="px-3 sm:px-6 pt-3 sm:pt-6 space-y-4">
           <CardTitle className="text-foreground text-base sm:text-lg">
             All Validators
@@ -299,26 +299,26 @@ const ValidatorPanel = () => {
             <div className="overflow-x-auto rounded-lg border border-border">
               <Table className="min-w-[800px]">
                 <TableHeader>
-                  <TableRow className="bg-muted">
-                    <TableHead className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                  <TableRow className="bg-zinc-900/80 backdrop-blur-md rounded-t-xl">
+                    <TableHead className="text-xs font-bold text-white whitespace-nowrap">
                       Name
                     </TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    <TableHead className="text-xs font-bold text-white whitespace-nowrap">
                       Voting Power
                     </TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    <TableHead className="text-xs font-bold text-white whitespace-nowrap">
                       Commission
                     </TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    <TableHead className="text-xs font-bold text-white whitespace-nowrap">
                       Nominators
                     </TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    <TableHead className="text-xs font-bold text-white whitespace-nowrap">
                       Self-Bonded
                     </TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    <TableHead className="text-xs font-bold text-white whitespace-nowrap">
                       Total Stake
                     </TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    <TableHead className="text-xs font-bold text-white whitespace-nowrap">
                       Status
                     </TableHead>
                   </TableRow>
@@ -327,9 +327,9 @@ const ValidatorPanel = () => {
                   {sortedValidators.map((validator) => (
                     <TableRow 
                       key={validator.address} 
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      className="bg-white/5 dark:bg-zinc-900/40 backdrop-blur-md border border-white/10 hover:bg-gradient-to-r hover:from-blue-900/40 hover:to-pink-900/30 transition-all duration-200 rounded-xl"
                     >
-                      <TableCell className="font-mono text-xs text-foreground max-w-[100px] truncate">
+                      <TableCell className="font-mono text-xs text-white max-w-[100px] truncate">
                         {validator.address}
                       </TableCell>
                       <TableCell className="text-xs text-foreground whitespace-nowrap">
@@ -348,9 +348,9 @@ const ValidatorPanel = () => {
                         {formatPower(validator.totalStake)}
                       </TableCell>
                       <TableCell>
-                        <Badge className={`text-xs border ${getStatusColor(validator.status)}`}>
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold shadow bg-gradient-to-r from-blue-500 to-pink-500 text-white border border-white/20 backdrop-blur-md`}>
                           {validator.status}
-                        </Badge>
+                        </span>
                       </TableCell>
                     </TableRow>
                   ))}

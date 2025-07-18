@@ -1,7 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FaArrowUp, FaArrowDown, FaCoins } from 'react-icons/fa';
 
@@ -52,11 +51,11 @@ const StakingActions = ({
   handleClaimRewards
 }: StakingActionsProps) => (
   <Tabs defaultValue="stake" className="space-y-4">
-    <TabsList className="grid w-full grid-cols-4">
-      <TabsTrigger value="stake">Stake</TabsTrigger>
-      <TabsTrigger value="redelegate">Redelegate</TabsTrigger>
-      <TabsTrigger value="unstake">Unstake</TabsTrigger>
-      <TabsTrigger value="rewards">Rewards</TabsTrigger>
+    <TabsList className="grid w-full grid-cols-4 bg-zinc-300 rounded-lg p-1">
+      <TabsTrigger value="stake" className="data-[state=active]:bg-zinc-300 data-[state=active]:text-zinc-900 data-[state=active]:shadow-sm text-zinc-600 font-medium rounded-md transition-colors">Stake</TabsTrigger>
+      <TabsTrigger value="redelegate" className="data-[state=active]:bg-zinc-300 data-[state=active]:text-zinc-900 data-[state=active]:shadow-sm text-zinc-600 font-medium rounded-md transition-colors">Redelegate</TabsTrigger>
+      <TabsTrigger value="unstake" className="data-[state=active]:bg-zinc-300 data-[state=active]:text-zinc-900 data-[state=active]:shadow-sm text-zinc-600 font-medium rounded-md transition-colors">Unstake</TabsTrigger>
+      <TabsTrigger value="rewards" className="data-[state=active]:bg-zinc-300 data-[state=active]:text-zinc-900 data-[state=active]:shadow-sm text-zinc-600 font-medium rounded-md transition-colors">Rewards</TabsTrigger>
     </TabsList>
     <TabsContent value="stake" className="space-y-4">
       <Card>
@@ -93,9 +92,13 @@ const StakingActions = ({
               onChange={(e) => setStakeAmount(e.target.value)}
             />
           </div>
-          <Button onClick={handleStake} disabled={loading || !stakeAmount || !selectedValidator} className="w-full">
+          <button
+            onClick={handleStake}
+            disabled={loading || !stakeAmount || !selectedValidator}
+            className="w-full py-2 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-pink-700 to-blue-700 shadow-md transition-all duration-200 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             {loading ? 'Staking...' : 'Stake XOR'}
-          </Button>
+          </button>
         </CardContent>
       </Card>
     </TabsContent>
@@ -134,9 +137,13 @@ const StakingActions = ({
               onChange={(e) => setRedelegateAmount(e.target.value)}
             />
           </div>
-          <Button onClick={handleRedelegate} disabled={loading || !redelegateAmount || !selectedValidator} className="w-full">
+          <button
+            onClick={handleRedelegate}
+            disabled={loading || !redelegateAmount || !selectedValidator}
+            className="w-full py-2 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-pink-700 to-blue-700 shadow-md transition-all duration-200 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             {loading ? 'Redelegating...' : 'Redelegate XOR'}
-          </Button>
+          </button>
         </CardContent>
       </Card>
     </TabsContent>
@@ -158,9 +165,13 @@ const StakingActions = ({
               onChange={(e) => setUndelegateAmount(e.target.value)}
             />
           </div>
-          <Button onClick={handleUndelegate} disabled={loading || !undelegateAmount} className="w-full">
+          <button
+            onClick={handleUndelegate}
+            disabled={loading || !undelegateAmount}
+            className="w-full py-2 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-pink-700 to-blue-700 shadow-md transition-all duration-200 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             {loading ? 'Unstaking...' : 'Unstake XOR'}
-          </Button>
+          </button>
         </CardContent>
       </Card>
     </TabsContent>
@@ -179,9 +190,13 @@ const StakingActions = ({
             </div>
             <div className="text-sm text-muted-foreground">Available Rewards</div>
           </div>
-          <Button onClick={handleClaimRewards} disabled={loading || parseFloat(userStaking.pendingRewards) === 0} className="w-full">
+          <button
+            onClick={handleClaimRewards}
+            disabled={loading || parseFloat(userStaking.pendingRewards) === 0}
+            className="w-full py-2 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-pink-700 to-blue-700 shadow-md transition-all duration-200 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             {loading ? 'Claiming...' : 'Claim Rewards'}
-          </Button>
+          </button>
         </CardContent>
       </Card>
     </TabsContent>

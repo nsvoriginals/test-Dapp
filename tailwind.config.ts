@@ -66,6 +66,25 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				}
 			},
+			backgroundImage: {
+				'gradient-blue-purple': 'linear-gradient(to right, #60a5fa, #a78bfa)',
+				'gradient-pink-red': 'linear-gradient(to right, #ec4899, #ef4444)',
+				'gradient-orange-yellow': 'linear-gradient(to right, #f59e42, #fbbf24)',
+				'gradient-purple-indigo': 'linear-gradient(to right, #a78bfa, #6366f1)',
+				'gradient-red-pink': 'linear-gradient(to right, #ef4444, #ec4899)',
+			},
+			boxShadow: {
+				'glass': '0 4px 32px 0 rgba(0,0,0,0.12)',
+			},
+			opacity: {
+				15: '0.15',
+				20: '0.20',
+				40: '0.40',
+			},
+			blur: {
+				xl: '24px',
+				'3xl': '64px',
+			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',

@@ -33,7 +33,7 @@ export default function Introduction() {
   let letterCount = 0;
 
   return (
-    <section className="relative py-12 md:py-16 bg-background text-foreground">
+    <section className="relative py-12 md:py-16 glass-card">
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="flex items-center justify-center min-h-[40vh] md:min-h-[30vh]">
           <div className="w-full max-w-4xl mx-auto text-center">
@@ -42,7 +42,7 @@ export default function Introduction() {
               <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 text-center">About</h2>
             </div>
             {/* Headline + Animated Text */}
-            <h1 className="text-5xl md:text-7xl font-extrabold leading-tight mb-6 break-words whitespace-normal">
+            <h1 className="text-5xl md:text-7xl font-extrabold leading-tight mb-6 break-words whitespace-normal gradient-blue-purple bg-clip-text text-transparent">
               <span className="block text-5xl md:text-7xl font-extrabold mb-4 whitespace-normal break-words">
                 {words.map((word, wIdx) => {
                   const wordLetters = lettersPerWord[wIdx];

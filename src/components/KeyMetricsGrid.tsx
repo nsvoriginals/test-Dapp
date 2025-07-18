@@ -13,6 +13,7 @@ interface KeyMetricsGridProps {
   totalValueLocked: string;
   getStatusColor: (value: number, type: 'validators' | 'health' | 'apr') => string;
   formatNumber: (num: number) => string;
+  cardClassName?: string;
 }
 
 const KeyMetricsGrid: React.FC<KeyMetricsGridProps> = ({
@@ -24,39 +25,52 @@ const KeyMetricsGrid: React.FC<KeyMetricsGridProps> = ({
   totalValueLocked,
   getStatusColor,
   formatNumber,
+  cardClassName = '',
 }) => (
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
     <MetricCard
       title="Validators Online"
-      icon={<FaUsers className="h-4 w-4 text-primary" />}
-      value={`${validatorsOnline}/${totalValidators}`}
+      icon={<FaUsers className="h-4 w-4 text-blue-400" />}
+      value={<span className="text-2xl font-bold text-white">{`${validatorsOnline}/${totalValidators}`}</span>}
       badge={
-        <Badge className={cn('mt-2', getStatusColor(validatorsOnline, 'validators'))}>
+        <Badge className={
+          Number(validatorPercentage) >= 90
+            ? 'bg-green-500/10 border border-green-500 text-green-500 font-semibold px-4 py-1 rounded-full'
+            : getStatusColor(validatorsOnline, 'validators')
+        }>
           {validatorPercentage}% Active
         </Badge>
       }
+      iconBgClass="bg-white/10"
+      cardClassName="text-white"
     />
     <MetricCard
       title="Staking APR"
-      icon={<FaChartLine className="h-4 w-4 text-primary" />}
-      value={`${stakingAPR}%`}
+      icon={<FaChartLine className="h-4 w-4 text-pink-500" />}
+      value={<span className="text-2xl font-bold text-white">{`${stakingAPR}%`}</span>}
       badge={
-        <Badge className={cn('mt-2', getStatusColor(stakingAPR, 'apr'))}>
+        <Badge className={cn('', getStatusColor(stakingAPR, 'apr'))}>
           Current Rate
         </Badge>
       }
+      iconBgClass="bg-white/10"
+      cardClassName="text-white"
     />
     <MetricCard
       title="Block Time"
-      icon={<FaClock className="h-4 w-4 text-primary" />}
-      value={`${avgBlockTime.toFixed(1)}s`}
-      description="Average Block Time"
+      icon={<FaClock className="h-4 w-4 text-yellow-400" />}
+      value={<span className="text-2xl font-bold text-white">{`${avgBlockTime.toFixed(1)}s`}</span>}
+      description={<span className="text-xs text-white/70">Average Block Time</span>}
+      iconBgClass="bg-white/10"
+      cardClassName="text-white"
     />
     <MetricCard
       title="Total Value Locked"
-      icon={<FaDollarSign className="h-4 w-4 text-primary" />}
-      value={formatNumber(parseFloat(totalValueLocked) || 0)}
-      description="TVL in XOR"
+      icon={<FaDollarSign className="h-4 w-4 text-purple-400" />}
+      value={<span className="text-2xl font-bold text-white">{formatNumber(parseFloat(totalValueLocked) || 0)}</span>}
+      description={<span className="text-xs text-white/70">TVL in XOR</span>}
+      iconBgClass="bg-white/10"
+      cardClassName="text-white"
     />
   </div>
 );

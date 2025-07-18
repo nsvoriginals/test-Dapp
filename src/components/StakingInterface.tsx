@@ -5,16 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { FaDollarSign } from 'react-icons/fa6';
-import { FaChartLine } from 'react-icons/fa6';
-import { FaShieldAlt } from 'react-icons/fa6';
-import { FaClock } from 'react-icons/fa6';
-import { FaStethoscope } from 'react-icons/fa6';
-import { FaUsers } from 'react-icons/fa6';
-import { FaCoins } from 'react-icons/fa6';
-import { FaArrowUp } from 'react-icons/fa6';
-import { FaArrowDown } from 'react-icons/fa6';
-import { FaWallet } from 'react-icons/fa6';
+import { FaDollarSign, FaChartLine, FaShieldAlt, FaClock, FaStethoscope, FaUsers, FaCoins, FaArrowUp, FaArrowDown, FaWallet } from 'react-icons/fa';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { usePolkadotStore } from '@/stores/polkadotStore';
@@ -27,9 +18,7 @@ import StakingOverview from './StakingOverview';
 import StakingActions from './StakingActions';
 import DelegationDistributionChart from './DelegationDistributionChart';
 import { u128 } from '@polkadot/types';
-import { PalletStakingValidatorPrefs, PalletStakingStakingLedger, PalletStakingNominations } from '@polkadot/types/lookup';
 import { TooltipProps } from 'recharts';
-import { FrameSystemAccountInfo } from '@polkadot/types/lookup';
 
 // MAIN STAKING INTERFACE COMPONENT, THIS IS WHERE STAKING HAPPENS
 
@@ -108,8 +97,8 @@ const StakingInterface = () => {
           validatorsList.push({
             accountId: account,
             commission: parseFloat(commission?.replace('%', '')) || 0,
-            totalStake: (totalStake as unknown as PalletStakingStakingLedger).total.toString(),
-            ownStake: (totalStake as unknown as PalletStakingStakingLedger).active.toString(),
+            totalStake: (totalStake as unknown as u128).toString(),
+            ownStake: (totalStake as unknown as u128).toString(),
             nominatorCount: nominators.filter(([key]) => key.args[0].toString() === account).length,
             isActive: true
           });
@@ -132,12 +121,12 @@ const StakingInterface = () => {
         console.log('💰 Fetching user staking data...');
         // Fetch user's ledger
         const ledger = await api.query.staking.ledger(selectedAccount.address);
-        if ((ledger as unknown as PalletStakingStakingLedger).total) {
-          const ledgerData = (ledger as unknown as PalletStakingStakingLedger).toHuman();
+        if ((ledger as unknown as u128).toHuman()) {
+          const ledgerData = (ledger as unknown as u128).toHuman();
           setUserStaking(prev => ({
             ...prev,
             totalStaked: ledgerData.total || '0',
-            delegations: (ledgerData.nominators as unknown as PalletStakingNominations)?.targets.map((nom: { toString: () => string; }) => ({
+            delegations: (ledgerData.nominators as unknown as u128)?.targets.map((nom: { toString: () => string; }) => ({
               validator: nom.toString(),
               amount: '0',
               rewards: '0'
@@ -146,7 +135,7 @@ const StakingInterface = () => {
         }
 
         // Fetch balance
-        const { data: { free }}: FrameSystemAccountInfo = await api.query.system.account(selectedAccount.address);
+        const { data: { free }}: u128 = await api.query.system.account(selectedAccount.address);
         setBalance(free.toString());
         console.log(' User staking data fetched');
       } catch (e: any) {
@@ -379,20 +368,23 @@ const StakingInterface = () => {
   }
 
   return (
-    <div className="min-h-screen bg-card p-2 sm:p-4 lg:p-6">
+    <div className="min-h-screen glass-card p-2 sm:p-4 lg:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Staking Interface</h1>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+              <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-sky-400/20 text-sky-400"><FaShieldAlt className="w-6 h-6" /></span>
+              Staking Interface
+            </h1>
             <p className="text-muted-foreground">Manage your XOR staking and delegations</p>
           </div>
           <div className="flex items-center space-x-2">
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-xs bg-green-500 text-black">
               {apiState.status === 'connected' ? 'Connected' : 'Disconnected'}
             </Badge>
             {selectedAccount && (
-              <Badge className="bg-primary text-primary-foreground">
+              <Badge className="bg-orange-300 text-primary-foreground">
                 {selectedAccount.meta.name || 'Wallet'}
               </Badge>
             )}

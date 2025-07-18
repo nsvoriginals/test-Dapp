@@ -1,13 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, ReferenceLine } from 'recharts';
-import { FaChartLine } from 'react-icons/fa6';
-import { FaUsers } from 'react-icons/fa6';
-import { FaClock } from 'react-icons/fa6';
-import { FaDollarSign } from 'react-icons/fa6';
-import { FaShieldAlt } from 'react-icons/fa6';
-import { FaBolt } from 'react-icons/fa6';
-import { FaWallet } from 'react-icons/fa6';
 import { cn } from '@/lib/utils';
 import { useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';

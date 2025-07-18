@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { FaChartLine, FaShieldAlt, FaExchangeAlt, FaRocket, FaSun, FaMoon } from 'react-icons/fa';
 import { Button } from '@/components/ui/button';
 import { useNavigate, Link } from 'react-router-dom';
-import { useTheme } from "next-themes";
 
 const navItems = [
   { id: 'overview', label: 'Overview', icon: FaChartLine },
@@ -15,14 +14,9 @@ const navItems = [
 const LandingHeader = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
 
   const handleLaunchExplorer = () => {
     navigate('/explorer');
-  };
-
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
   };
 
   return (
@@ -71,22 +65,13 @@ const LandingHeader = () => {
             })}
           </div>
 
-          {/* Launch Button & Theme Toggle */}
+          {/* Launch Button */}
           <div className="flex items-center gap-2">
             <Button
               onClick={handleLaunchExplorer}
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               Launch Explorer
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleTheme}
-              className="text-muted-foreground hover:text-foreground flex-shrink-0"
-              aria-label="Toggle theme"
-            >
-              {theme === "dark" ? <FaSun className="h-5 w-5" /> : <FaMoon className="h-5 w-5" />}
             </Button>
           </div>
         </div>

@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FaSun, FaMoon } from "react-icons/fa";
 import logo from '/logo.svg';
 
-const LandingNavbar = ({ isOpen, setIsOpen, navItems, handleNavClick, navigate, theme, toggleTheme }) => (
-  <section className="py-4 lg:py-8 fixed w-full top-0 z-50 bg-background/80 backdrop-blur">
+const LandingNavbar = ({ isOpen, setIsOpen, navItems, handleNavClick, navigate }) => (
+  <section className="py-4 lg:py-8 fixed w-full top-0 z-50 glass-card">
     <div className="container max-w-5xl mx-auto px-4">
-      <div className="border border-border rounded-[27px] md:rounded-full bg-card/80 backdrop-blur max-w-5xl mx-auto">
+      <div className="border border-border rounded-[27px] md:rounded-full glass-card max-w-5xl mx-auto">
         <div className="grid grid-cols-2 lg:grid-cols-3 p-2 px-4 items-center">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/') }>
             <img src={logo} alt="company-logo" className="h-8 w-auto md:h-7" />
@@ -26,21 +26,12 @@ const LandingNavbar = ({ isOpen, setIsOpen, navItems, handleNavClick, navigate, 
               ))}
             </nav>
           </div>
-          <div className="flex justify-end gap-3 items-center">
-            <button
-              className="bg-primary text-primary-foreground rounded-full px-6 py-2 font-semibold shadow hover:bg-primary/90 transition-all"
-              onClick={() => navigate('/explorer')}
-            >
-              Explore
-            </button>
-            <button
-              onClick={toggleTheme}
-              className="ml-2 p-2 rounded-full bg-muted text-muted-foreground hover:bg-primary/10 transition-colors"
-              aria-label="Toggle theme"
-            >
-              {theme === "dark" ? <FaSun className="w-5 h-5" /> : <FaMoon className="w-5 h-5" />}
-            </button>
-          </div>
+          <button
+            className="bg-gradient-to-r from-pink-500 via-purple-500 to-pink-400 text-white rounded-full px-6 py-2 font-semibold shadow backdrop-blur-xl hover:from-purple-500 hover:to-pink-500 transition-all border border-white/10"
+            onClick={() => navigate('/explorer')}
+          >
+            Explore
+          </button>
         </div>
         <AnimatePresence>
           {isOpen && (

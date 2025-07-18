@@ -186,7 +186,7 @@ const TransactionExplorer = () => {
 
   const getStatusIcon = (success: boolean) => {
     return success ? (
-      <FaCheckCircle className="w-4 h-4 text-green-500" />
+      <FaCheckCircle className="w-4 h-4 text-blue-500" />
     ) : (
       <FaTimesCircle className="w-4 h-4 text-red-500" />
     );
@@ -194,9 +194,9 @@ const TransactionExplorer = () => {
 
   const getMethodColor = (section: string) => {
     switch (section) {
-      case 'balances': return 'bg-blue-500/20 text-blue-500 border-blue-500/30';
-      case 'staking': return 'bg-green-500/20 text-green-500 border-green-500/30';
-      case 'system': return 'bg-gray-500/20 text-gray-500 border-gray-500/30';
+      case 'balances': return 'bg-gradient-blue-purple text-blue-500 border-blue-500/30';
+      case 'staking': return 'bg-gradient-purple-indigo text-purple-500 border-purple-500/30';
+      case 'system': return 'bg-gradient-orange-yellow text-orange-500 border-orange-500/30';
       default: return 'bg-primary/20 text-primary border-primary/30';
     }
   };
@@ -213,8 +213,8 @@ const TransactionExplorer = () => {
   const isEmpty = !showSkeleton && filteredExtrinsics.length === 0;
 
   return (
-    <div className="min-h-screen bg-card p-2 sm:p-4 lg:p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-card p-2 sm:p-4lg:p-6">
+      <div className="max-w-7xl mx-auto  space-y-6">
         {/* Header */}
         <TransactionExplorerHeader
           hasData={hasData}
@@ -247,7 +247,7 @@ const TransactionExplorer = () => {
             />
           </div>
           {/* Main Content */}
-          <div className="lg:col-span-3 space-y-6">
+          <div className="lg:col-span-3  space-y-6">
             <Tabs defaultValue="transactions" className="space-y-4">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="transactions">Recent Transactions</TabsTrigger>

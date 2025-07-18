@@ -15,7 +15,7 @@ const AccountSelector = ({ accounts, selectedAccount, setSelectedAccount, balanc
   <Card>
     <CardHeader>
       <CardTitle className="flex items-center space-x-2">
-        <FaWallet className="w-5 h-5 text-primary" />
+        <FaWallet className="w-5 h-5 text-purple-600" />
         <span>Wallet Connection</span>
       </CardTitle>
     </CardHeader>
@@ -45,7 +45,7 @@ const AccountSelector = ({ accounts, selectedAccount, setSelectedAccount, balanc
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="min-w-0">
               <label className="text-sm font-medium text-foreground">Address</label>
-              <div className="text-sm text-muted-foreground font-mono bg-muted p-2 rounded">
+              <div className="text-sm text-white font-mono bg-zinc-700 p-2 rounded">
                 <div className="truncate" title={selectedAccount.address}>
                   {selectedAccount.address}
                 </div>

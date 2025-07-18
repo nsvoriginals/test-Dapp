@@ -16,9 +16,7 @@ export default defineConfig(() => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      'stream': 'stream-browserify',
-      'buffer': 'buffer',
-      'crypto': 'crypto-browserify',
+      
     },
   },
   optimizeDeps: {

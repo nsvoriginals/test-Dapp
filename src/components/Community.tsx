@@ -49,7 +49,7 @@ const socialLinks = [
 
 export default function CommunitySection() {
   return (
-    <section id="community" className="relative py-12 bg-background overflow-hidden">
+    <section id="community" className="relative py-12 glass-card overflow-hidden">
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
@@ -68,7 +68,7 @@ export default function CommunitySection() {
             <span className="text-primary font-semibold tracking-wider text-sm uppercase mb-4 block">
               Connect With Us
             </span>
-            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 leading-tight">
+            <h2 className="text-4xl md:text-5xl font-bold gradient-blue-purple bg-clip-text text-transparent mb-6 leading-tight">
               Join Our
               <span className="block text-primary">
                 Community

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTheme } from "next-themes";
 import { usePolkadotStore } from '@/stores/polkadotStore';
 import Footer from '@/components/Footer';
 import About from '@/components/About';
@@ -12,7 +11,6 @@ import LandingFeatures from '@/components/LandingFeatures';
 const LandingPage = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
   const { connect, apiState } = usePolkadotStore();
 
   // Connect to the blockchain when landing page loads
@@ -31,10 +29,6 @@ const LandingPage = () => {
     }
   };
 
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  };
-
   const navItems = [
     { name: 'Features', href: '#features' },
     { name: 'About', href: '#about' },
@@ -43,14 +37,18 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+       <div className="fixed inset-0 pointer-events-none">
+        <div className="floating-bg absolute top-20 left-10 w-48 h-48 md:w-96 md:h-96 bg-gradient-to-r from-pink-400/20 to-purple-500/20 rounded-full blur-3xl"></div>
+        <div className="floating-bg absolute bottom-20 right-10 w-40 h-40 md:w-80 md:h-80 bg-gradient-to-r from-purple-400/20 to-pink-500/20 rounded-full blur-3xl"></div>
+        <div className="floating-bg absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 md:w-64 md:h-64 bg-gradient-to-r from-orange-400/20 to-pink-400/20 rounded-full blur-3xl"></div>
+      </div>
+
       <LandingNavbar
         isOpen={isOpen}
         setIsOpen={setIsOpen}
         navItems={navItems}
         handleNavClick={handleNavClick}
         navigate={navigate}
-        theme={theme}
-        toggleTheme={toggleTheme}
       />
       <div className="pb-[86px] md:pb-[98px] lg:pb-[130px]"></div>
       <LandingHero navigate={navigate} />

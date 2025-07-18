@@ -20,7 +20,7 @@ export default function Footer() {
   const navigate = useNavigate();
 
   return (
-    <footer className="bg-card/80 border-t border-border py-12 px-4 sm:px-6 lg:px-8">
+    <footer className="glass-card border-t border-border py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col gap-10">
           {/* Top section */}
@@ -34,7 +34,7 @@ export default function Footer() {
               transition={{ duration: 0.5 }}
             >
               <img src={logo} alt="company-logo" className="h-8 w-auto md:h-7" />
-              <span className="text-xl font-semibold text-primary">XORION</span>
+              <span className="text-xl font-semibold text-white">XORION</span>
             </motion.div>
 
             <nav className="flex flex-wrap justify-center gap-6 md:gap-8">
@@ -66,7 +66,7 @@ export default function Footer() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-                  className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center hover:bg-primary/10 transition-colors"
+                  className="w-10 h-10 glass-card rounded-lg flex items-center justify-center transition-colors"
                 >
                   <social.icon className="text-primary" size={20} />
                 </motion.a>

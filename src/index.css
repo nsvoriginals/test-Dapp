@@ -11,115 +11,41 @@
   font-style: normal;
 }
 
-
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 77 100% 43%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 80 10% 95%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 80 10% 95%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 77 20% 90%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 80 10% 90%;
-    --input: 80 10% 90%;
-    --ring: 77 50% 50%;
-
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-
-    --badge-transfer-bg: 77 100% 25%; /* Darker primary for badge */
-    --badge-transfer-fg: 210 40% 98%;
-    --badge-delegate-bg: 77 20% 30%; /* Darker accent for badge */
-    --badge-delegate-fg: 210 40% 98%;
-    --badge-undelegate-bg: 0 62.8% 20%; /* Darker destructive for badge */
-    --badge-undelegate-fg: 210 40% 98%;
-    --badge-vote-bg: 80 10% 25%; /* Darker secondary for badge */
-    --badge-vote-fg: 210 40% 98%;
-    --badge-success-bg: 77 100% 25%; /* Darker primary for badge */
-    --badge-success-fg: 210 40% 98%;
-    --badge-failed-bg: 0 62.8% 20%; /* Darker destructive for badge */
-    --badge-failed-fg: 210 40% 98%;
-    --badge-pending-bg: 80 10% 25%; /* Darker secondary for badge */
-    --badge-pending-fg: 210 40% 98%;
-  }
-
-  .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
-
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-
-    --primary: 77 100% 43%;
+    --primary: 217.2 91.2% 59.8%; /* Blue */
     --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 80 10% 15%;
+    --secondary: 34.3 91.2% 59.8%; /* Orange */
     --secondary-foreground: 210 40% 98%;
-
-    --muted: 80 10% 15%;
+    --muted: 215 20.2% 65.1%;
     --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 77 20% 20%;
+    --accent: 329.3 91.2% 59.8%; /* Pink */
     --accent-foreground: 210 40% 98%;
-
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-
-    --border: 80 10% 20%;
-    --input: 80 10% 20%;
-    --ring: 77 50% 30%;
-
-    --badge-transfer-bg: 77 100% 25%; /* Darker primary for badge */
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 217.2 91.2% 59.8%;
+    --badge-transfer-bg: 217.2 91.2% 59.8%;
     --badge-transfer-fg: 210 40% 98%;
-    --badge-delegate-bg: 77 20% 30%; /* Darker accent for badge */
+    --badge-delegate-bg: 329.3 91.2% 59.8%;
     --badge-delegate-fg: 210 40% 98%;
-    --badge-undelegate-bg: 0 62.8% 20%; /* Darker destructive for badge */
+    --badge-undelegate-bg: 0 84.2% 60.2%;
     --badge-undelegate-fg: 210 40% 98%;
-    --badge-vote-bg: 80 10% 25%; /* Darker secondary for badge */
+    --badge-vote-bg: 34.3 91.2% 59.8%;
     --badge-vote-fg: 210 40% 98%;
-    --badge-success-bg: 77 100% 25%; /* Darker primary for badge */
+    --badge-success-bg: 142.1 76.2% 36.3%;
     --badge-success-fg: 210 40% 98%;
-    --badge-failed-bg: 0 62.8% 20%; /* Darker destructive for badge */
+    --badge-failed-bg: 0 84.2% 60.2%;
     --badge-failed-fg: 210 40% 98%;
-    --badge-pending-bg: 80 10% 25%; /* Darker secondary for badge */
-    --badge-pending-fg: 210 40% 98%;
-
+    --badge-pending-bg: 47.9 95.8% 53.1%; /* Yellow */
+    --badge-pending-fg: 222.2 47.4% 11.2%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -128,6 +54,7 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    --radius: 0.5rem;
   }
 }
 
@@ -137,6 +64,53 @@
   }
 
   body {
-    @apply bg-background text-foreground font-geist;
+    @apply bg-black text-white dark:bg-white dark:text-black font-geist;
+    position: relative;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Neon blurry gradient background overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    z-index: 0;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse 60% 40% at 20% 20%, hsl(var(--primary) / 0.3) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 30% at 80% 10%, hsl(var(--accent) / 0.3) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 30% at 80% 80%, hsl(var(--secondary) / 0.3) 0%, transparent 70%),
+                radial-gradient(ellipse 30% 20% at 10% 80%, hsl(var(--highlight) / 0.3) 0%, transparent 70%);
+    filter: blur(64px);
+    opacity: 0.85;
+  }
+
+  #root, .app-main {
+    position: relative;
+    z-index: 1;
+  }
+
+  .glass-card {
+    @apply bg-white/10 dark:bg-black/10 backdrop-blur-xl rounded-2xl border border-white/10 dark:border-black/10 shadow-glass;
+  }
+
+  .gradient-blue-purple {
+    background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--accent)));
+  }
+  .gradient-pink-red {
+    background: linear-gradient(to right, hsl(var(--accent)), hsl(var(--secondary)));
+  }
+  .gradient-orange-yellow {
+    background: linear-gradient(to right, hsl(var(--secondary)), hsl(var(--highlight)));
+  }
+  .gradient-purple-indigo {
+    background: linear-gradient(to right, hsl(var(--accent)), hsl(var(--primary)));
+  }
+  .gradient-red-pink {
+    background: linear-gradient(to right, hsl(var(--secondary)), hsl(var(--accent)));
   }
 }
+
+/* Example usage:
+<div className="glass-card gradient-blue-purple ...">...</div>
+*/

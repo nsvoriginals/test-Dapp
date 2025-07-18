@@ -55,7 +55,7 @@ const ChartsSection: React.FC<ChartsSectionProps> = ({
           <Card className="bg-card/50 backdrop-blur-sm border border-border">
             <CardHeader>
               <CardTitle className="text-foreground flex items-center space-x-2">
-                <FaBolt className="w-5 h-5 text-primary" />
+                <FaBolt className="w-5 h-5 text-pink-600" />
                 <span>Network Activity (Last 24 Hours)</span>
               </CardTitle>
             </CardHeader>
@@ -170,7 +170,7 @@ const ChartsSection: React.FC<ChartsSectionProps> = ({
           <Card className="bg-card/50 backdrop-blur-sm border border-border">
             <CardHeader>
               <CardTitle className="text-foreground flex items-center space-x-2">
-                <FaShieldAlt className="w-5 h-5 text-primary" />
+                <FaShieldAlt className="w-5 h-5 text-orange-600" />
                 <span>Staking Overview (12 Months)</span>
               </CardTitle>
             </CardHeader>
@@ -242,7 +242,7 @@ const ChartsSection: React.FC<ChartsSectionProps> = ({
         <Card className="bg-card/50 backdrop-blur-sm border border-border">
           <CardHeader>
             <CardTitle className="text-foreground flex items-center space-x-2">
-              <FaShieldAlt className="w-5 h-5 text-primary" />
+              <FaShieldAlt className="w-5 h-5 text-green-500" />
               <span>Network Health Trend (Last 24 Hours)</span>
             </CardTitle>
           </CardHeader>
@@ -303,27 +303,16 @@ const ChartsSection: React.FC<ChartsSectionProps> = ({
                   {/* Add a reference line for 100% */}
                   <ReferenceLine 
                     y={100} 
-                    stroke="hsl(var(--success))" 
-                    strokeDasharray="3 3" 
-                    strokeWidth={2}
+                    stroke="#77D61F" // purple
+                    strokeDasharray="0" // solid line
+                    strokeWidth={3}
                     label={{ 
                       value: '100%', 
                       position: 'insideTopRight',
-                      fill: 'hsl(var(--success))',
-                      fontSize: 10
+                      fill: '#a78bfa',
+                      fontSize: 12
                     }}
-                  /><ReferenceLine 
-  y={100} 
-  stroke="#00FF00" // bright green
-  strokeDasharray="0" // solid line
-  strokeWidth={3}
-  label={{ 
-    value: '100%', 
-    position: 'insideTopRight',
-    fill: '#00FF00',
-    fontSize: 12
-  }}
-/>
+                  />
                   {/* Existing 95% threshold line */}
                   <ReferenceLine 
                     y={95} 

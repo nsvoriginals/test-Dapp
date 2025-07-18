@@ -165,7 +165,7 @@ const WalletConnection = () => {
       <Button
         onClick={handleConnect}
         variant="outline"
-        className="flex items-center space-x-2"
+        className="flex items-center space-x-2 bg-blue-300 hover:bg-blue-500 text-black"
         disabled={apiState.status !== 'connected'}
       >
         <FaWallet className="w-4 h-4" />
@@ -180,7 +180,7 @@ const WalletConnection = () => {
         ref={buttonRef}
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
         variant="outline"
-        className="flex items-center space-x-2"
+        className="flex items-center space-x-2 bg-blue-300 text-black hover:bg-blue-500 hover:text-black"
       >
         <FaWallet className="w-4 h-4" />
         <span>{formatShort(selectedAccount.address)}</span>
@@ -194,7 +194,7 @@ const WalletConnection = () => {
             onClick={() => setIsDropdownOpen(false)}
           />
           <Card
-            className="fixed z-[9999] shadow-2xl border border-border/50 bg-card/95 backdrop-blur-sm"
+            className="fixed z-[9999] shadow-2xl border border-border/50 glass-card"
             style={{
               top: dropdownStyle.top,
               left: dropdownStyle.left,
@@ -205,7 +205,7 @@ const WalletConnection = () => {
           >
             {/* Arrow pointing to button */}
             <div 
-              className="absolute w-3 h-3 bg-card border-l border-t border-border/50 transform rotate-45"
+              className="absolute w-3 h-3 glass-card border-l border-t border-border/50 transform rotate-45"
               style={{
                 top: '-6px',
                 left: '20px'
@@ -216,10 +216,10 @@ const WalletConnection = () => {
                 {/* Wallet Info */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <FaWallet className="w-5 h-5 text-primary" />
+                    <FaWallet className="w-5 h-5 text-pink-500" />
                     <span className="text-foreground font-medium">{selectedAccount.meta.name || selectedAccount.meta.source}</span>
                   </div>
-                  <Badge className="bg-primary text-primary-foreground border-primary/30">
+                  <Badge className="bg-green-500 hover:bg-green-300 text-primary-foreground border-primary/30">
                     Connected
                   </Badge>
                 </div>
@@ -265,7 +265,7 @@ const WalletConnection = () => {
                     <div className={cn(
                       "w-2 h-2 rounded-full",
                       apiState.status === 'connected' ? "bg-green-500" : 
-                      apiState.status === 'connecting' ? "bg-yellow-500" : "bg-red-500"
+                      apiState.status === 'connecting' ? "bg-yellow-400" : "bg-red-500"
                     )} />
                     <span className="text-sm text-foreground capitalize">{apiState.status}</span>
                   </div>
@@ -274,19 +274,17 @@ const WalletConnection = () => {
                 {/* Actions */}
                 <div className="flex space-x-2 pt-2 border-t border-border">
                   <Button
-                    variant="outline"
                     size="sm"
                     onClick={() => copyToClipboard(selectedAccount.address)}
-                    className="flex-1"
+                    className="flex-1 bg-gradient-to-r from-pink-500  to-purple-500 text-white border-none shadow hover:from-blue-500 hover:to-pink-500 transition-all"
                   >
                     <FaCopy className="w-3 h-3 mr-1" />
                     Copy Address
                   </Button>
                   <Button
-                    variant="outline"
                     size="sm"
                     onClick={handleDisconnect}
-                    className="flex-1"
+                    className="flex-1 bg-gradient-to-r from-pink-500  to-purple-500 text-white border-none shadow hover:from-blue-500 hover:to-pink-500 transition-all"
                   >
                     <FaSignOutAlt className="w-3 h-3 mr-1" />
                     Disconnect

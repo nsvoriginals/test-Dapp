@@ -31,11 +31,11 @@ const NavigationBar = ({ tabs, activeTab, setActiveTab }) => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center space-x-2 px-3 py-4 border-b-2 text-sm font-medium transition-colors ${
                     activeTab === tab.id
-                      ? 'border-primary text-primary'
+                      ? 'border-transparent bg-gradient-to-r from-pink-400 to-purple-500 bg-clip-text text-transparent border-b-2 border-gradient-to-r from-pink-400 to-purple-500'
                       : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                   }`}
                 >
-                  <IconComponent className="w-4 h-4" />
+                  <IconComponent className="w-4 h-4  text-gradient-to-r from-pink-400 to-purple-500" />
                   <span>{tab.label}</span>
                 </button>
               );
@@ -152,18 +152,21 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+       <div className="fixed inset-0 pointer-events-none">
+        <div className="floating-bg absolute top-20 left-10 w-48 h-48 md:w-96 md:h-96 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-3xl"></div>
+        <div className="floating-bg absolute bottom-20 right-10 w-40 h-40 md:w-80 md:h-80 bg-gradient-to-r from-pink-500/20 to-red-500/20 rounded-full blur-3xl"></div>
+        <div className="floating-bg absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 md:w-64 md:h-64 bg-gradient-to-r from-green-500/20 to-cyan-500/20 rounded-full blur-3xl"></div>
+      </div>
+
       {/* Header - Always clean and visible */}
       <Header />
-      
       {/* Navigation - Responsive tabs */}
       <NavigationBar tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} />
-      
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 glass-card">
         {renderContent()}
       </main>
-
-     <Footer></Footer>
+      <Footer />
     </div>
   );
 };

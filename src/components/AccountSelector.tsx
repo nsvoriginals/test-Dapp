@@ -15,7 +15,7 @@ const AccountSelector = ({ accounts, selectedAccount, setSelectedAccount, balanc
   <Card>
     <CardHeader>
       <CardTitle className="flex items-center space-x-2">
-        <FaWallet className="w-5 h-5 text-purple-600" />
+        <FaWallet className="w-5 h-5 text-white" />
         <span>Wallet Connection</span>
       </CardTitle>
     </CardHeader>

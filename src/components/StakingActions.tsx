@@ -61,7 +61,7 @@ const StakingActions = ({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <FaArrowUp className="w-5 h-5 text-primary" />
+            <FaArrowUp className="w-5 h-5 text-white" />
             <span>Delegate XOR</span>
           </CardTitle>
         </CardHeader>
@@ -106,7 +106,7 @@ const StakingActions = ({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <FaArrowUp className="w-5 h-5 text-primary" />
+            <FaArrowUp className="w-5 h-5 text-white" />
             <span>Redelegate XOR</span>
           </CardTitle>
         </CardHeader>
@@ -151,7 +151,7 @@ const StakingActions = ({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <FaArrowDown className="w-5 h-5 text-primary" />
+            <FaArrowDown className="w-5 h-5 text-white" />
             <span>Unstake XOR</span>
           </CardTitle>
         </CardHeader>
@@ -179,7 +179,7 @@ const StakingActions = ({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <FaCoins className="w-5 h-5 text-primary" />
+            <FaCoins className="w-5 h-5 text-white" />
             <span>Claim Rewards</span>
           </CardTitle>
         </CardHeader>

@@ -67,12 +67,12 @@ const TransactionsTable: React.FC<TransactionsTableProps> = ({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Hash</TableHead>
-              <TableHead>Block</TableHead>
-              <TableHead>Method</TableHead>
-              <TableHead>Signer</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Time</TableHead>
+              <TableHead className="text-white">Hash</TableHead>
+              <TableHead className="text-white">Block</TableHead>
+              <TableHead className="text-white">Method</TableHead>
+              <TableHead className="text-white">Signer</TableHead>
+              <TableHead className="text-white">Status</TableHead>
+              <TableHead className="text-white">Time</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -81,9 +81,9 @@ const TransactionsTable: React.FC<TransactionsTableProps> = ({
             ) : (
               transactions.map((tx, index) => (
                 <TableRow key={index} className="hover:bg-muted/50">
-                  <TableCell>
+                  <TableCell className="text-white">
                     <div className="flex items-center space-x-2">
-                      <span className="font-mono text-sm">{formatHash(tx.hash)}</span>
+                      <span className="font-mono text-sm text-white">{formatHash(tx.hash)}</span>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -94,22 +94,22 @@ const TransactionsTable: React.FC<TransactionsTableProps> = ({
                       </Button>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <span className="text-sm">{tx.blockNumber}</span>
+                  <TableCell className="text-white">
+                    <span className="text-sm text-white">{tx.blockNumber}</span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-white">
                     <Badge className={"text-xs " + getMethodColor(tx.section)}>
                       {tx.section}.{tx.method}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    <span className="text-sm font-mono">{formatAddress(tx.signer)}</span>
+                  <TableCell className="text-white">
+                    <span className="text-sm font-mono text-white">{formatAddress(tx.signer)}</span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-white">
                     {getStatusIcon(tx.success)}
                   </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-muted-foreground">
+                  <TableCell className="text-white">
+                    <span className="text-sm text-white">
                       {tx.timestamp ? tx.timestamp.toLocaleTimeString() : 'N/A'}
                     </span>
                   </TableCell>

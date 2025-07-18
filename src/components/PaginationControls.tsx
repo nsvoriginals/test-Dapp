@@ -26,6 +26,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
         size="sm"
         onClick={onPrev}
         disabled={currentPage === 1}
+        className="text-white"
       >
         Previous
       </Button>
@@ -34,6 +35,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
         size="sm"
         onClick={onNext}
         disabled={currentPage >= totalPages}
+        className="text-white"
       >
         Next
       </Button>

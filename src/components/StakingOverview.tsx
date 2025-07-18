@@ -14,7 +14,7 @@ interface StakingOverviewProps {
 const StakingOverview = ({ userStaking }: StakingOverviewProps) => (
   <Card className="glass-card">
     <CardHeader>
-      <CardTitle className="flex items-center space-x-2">
+      <CardTitle className="flex items-center space-x-2 text-white">
         <FaShieldAlt className="w-5 h-5 text-pink-400" />
         <span>Staking Overview</span>
       </CardTitle>

@@ -24,7 +24,7 @@ const TransactionExplorerHeader: React.FC<TransactionExplorerHeaderProps> = ({
 }) => (
   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
     <div>
-      <h1 className="text-3xl font-bold text-foreground">Transaction Explorer</h1>
+      <h1 className="text-3xl font-bold tracking-tight text-white">Transaction Explorer</h1>
       <p className="text-muted-foreground">Explore recent transactions and blocks on the network</p>
     </div>
     <div className="flex items-center space-x-2">

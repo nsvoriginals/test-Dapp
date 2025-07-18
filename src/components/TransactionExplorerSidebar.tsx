@@ -38,13 +38,13 @@ const TransactionExplorerSidebar: React.FC<TransactionExplorerSidebarProps> = ({
   <Card>
     <CardHeader>
       <CardTitle className="flex items-center space-x-2">
-        <FaSearch className="w-5 h-5 text-primary" />
+        <FaSearch className="w-5 h-5 text-white" />
         <span>Search & Filter</span>
       </CardTitle>
     </CardHeader>
     <CardContent className="space-y-4">
       <div>
-        <label className="text-sm font-medium text-foreground">Search</label>
+        <h3 className="text-lg font-semibold mb-2 text-white">Search</h3>
         <Input
           placeholder="Search by hash, address, or method..."
           value={searchQuery}
@@ -52,7 +52,7 @@ const TransactionExplorerSidebar: React.FC<TransactionExplorerSidebarProps> = ({
         />
       </div>
       <div>
-        <label className="text-sm font-medium text-foreground">Filter by Type</label>
+        <label className="block text-sm font-medium mb-1 text-white">Filter by Type</label>
         <Select value={filterType} onValueChange={setFilterType}>
           <SelectTrigger>
             <SelectValue />

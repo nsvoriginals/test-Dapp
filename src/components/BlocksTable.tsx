@@ -44,10 +44,10 @@ const BlocksTable: React.FC<BlocksTableProps> = ({
   <Table>
     <TableHeader>
       <TableRow>
-        <TableHead>Height</TableHead>
-        <TableHead>Hash</TableHead>
-        <TableHead>Transactions</TableHead>
-        <TableHead>Time</TableHead>
+        <TableHead className="text-white">Height</TableHead>
+        <TableHead className="text-white">Hash</TableHead>
+        <TableHead className="text-white">Transactions</TableHead>
+        <TableHead className="text-white">Time</TableHead>
       </TableRow>
     </TableHeader>
     <TableBody>
@@ -56,12 +56,12 @@ const BlocksTable: React.FC<BlocksTableProps> = ({
       ) : (
         blocks.map((block, index) => (
           <TableRow key={index} className="hover:bg-muted/50">
-            <TableCell>
-              <span className="font-medium">{block.height}</span>
+            <TableCell className="text-white">
+              <span className="font-medium text-white">{block.height}</span>
             </TableCell>
-            <TableCell>
+            <TableCell className="text-white">
               <div className="flex items-center space-x-2">
-                <span className="font-mono text-sm">{formatHash(block.hash)}</span>
+                <span className="font-mono text-sm text-white">{formatHash(block.hash)}</span>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -72,11 +72,11 @@ const BlocksTable: React.FC<BlocksTableProps> = ({
                 </Button>
               </div>
             </TableCell>
-            <TableCell>
+            <TableCell className="text-white">
               <Badge variant="outline">{block.txCount}</Badge>
             </TableCell>
-            <TableCell>
-              <span className="text-sm text-muted-foreground">
+            <TableCell className="text-white">
+              <span className="text-sm text-white">
                 {block.timestamp ? block.timestamp.toLocaleTimeString() : 'N/A'}
               </span>
             </TableCell>

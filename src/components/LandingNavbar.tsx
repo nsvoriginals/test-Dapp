@@ -10,7 +10,7 @@ const LandingNavbar = ({ isOpen, setIsOpen, navItems, handleNavClick, navigate }
         <div className="grid grid-cols-2 lg:grid-cols-3 p-2 px-4 items-center">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/') }>
             <img src={logo} alt="company-logo" className="h-8 w-auto md:h-7" />
-            <span className="text-xl font-semibold text-primary">XORION</span>
+            <span className="text-xl font-semibold text-white">XORION</span>
           </div>
           <div className="lg:flex justify-center items-center hidden">
             <nav className="flex gap-4 font-medium">

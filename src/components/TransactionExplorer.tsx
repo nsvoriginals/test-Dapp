@@ -231,6 +231,7 @@ const TransactionExplorer = () => {
             "lg:col-span-1 space-y-4",
             sidebarOpen ? "block" : "hidden lg:block"
           )}>
+            <h2 className="text-white text-xl font-bold mb-4">Search & Filter</h2>
             <TransactionExplorerSidebar
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
@@ -256,7 +257,7 @@ const TransactionExplorer = () => {
               <TabsContent value="transactions" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Recent Transactions</CardTitle>
+                    <CardTitle className="text-white">Recent Transactions</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {isEmpty ? (

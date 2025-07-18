@@ -161,10 +161,7 @@ interface PolkadotStore {
 
 // Fixed endpoints with fallbacks
 const ENDPOINTS = [
-  'ws://3.219.48.230:9944',
-  'wss://rpc.polkadot.io', // Fallback
-  'wss://polkadot.api.onfinality.io/public-ws', // Fallback
-  'wss://polkadot-rpc.dwellir.com' // Fallback
+  "wss://ws-proxy-latest-jds3.onrender.com"
 ];
 
 const DEFAULT_METRICS: NetworkMetrics = {

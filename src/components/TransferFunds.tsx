@@ -205,15 +205,15 @@ const TransferFunds = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Transfer Funds</h1>
-            <p className="text-muted-foreground">Send XOR tokens to other addresses</p>
+            <h1 className="text-3xl font-bold text-white">Transfer Funds</h1>
+            <p className="text-white">Send XOR tokens to other addresses</p>
           </div>
           <div className="flex items-center space-x-2">
             <Badge variant="outline" className="text-xs">
               {apiState.status === 'connected' ? 'Connected' : 'Disconnected'}
             </Badge>
             {selectedAccount && (
-              <Badge className="bg-primary text-primary-foreground">
+              <Badge className="bg-primary text-white-foreground">
                 {selectedAccount.meta.name || 'Wallet'}
               </Badge>
             )}
@@ -225,15 +225,15 @@ const TransferFunds = () => {
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <FaExchangeAlt className="w-5 h-5 text-primary" />
+                <CardTitle className="flex items-center space-x-2 text-white">
+                  <FaExchangeAlt className="w-5 h-5 text-white" />
                   <span>Send Funds</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Account Selection */}
                 <div>
-                  <label className="text-sm font-medium text-foreground">From Account</label>
+                  <label className="text-sm font-medium text-white">From Account</label>
                   <Select value={selectedAccount?.address} onValueChange={(address) => {
                     const account = accounts.find(acc => acc.address === address);
                     setSelectedAccount(account || null);
@@ -252,7 +252,7 @@ const TransferFunds = () => {
                     </SelectContent>
                   </Select>
                   {selectedAccount && (
-                    <div className="mt-2 text-sm text-muted-foreground">
+                    <div className="mt-2 text-sm text-white">
                       Balance: {formatBalance(balance, { decimals: 10 })} XOR
                     </div>
                   )}
@@ -260,7 +260,7 @@ const TransferFunds = () => {
 
                 {/* Token Selection */}
                 <div>
-                  <label className="text-sm font-medium text-foreground">Token</label>
+                  <label className="text-sm font-medium text-white">Token</label>
                   <Select value={selectedToken} onValueChange={setSelectedToken}>
                     <SelectTrigger>
                       <SelectValue />
@@ -274,7 +274,7 @@ const TransferFunds = () => {
 
                 {/* Recipient Address */}
                 <div>
-                  <label className="text-sm font-medium text-foreground">To Address</label>
+                  <label className="text-sm font-medium text-white">To Address</label>
                   <Input
                     placeholder="Enter recipient address"
                     value={recipient}
@@ -290,14 +290,14 @@ const TransferFunds = () => {
 
                 {/* Amount */}
                 <div>
-                  <label className="text-sm font-medium text-foreground">Amount</label>
+                  <label className="text-sm font-medium text-white">Amount</label>
                   <Input
                     type="text"
                     placeholder="Enter amount"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                   />
-                  <div className="mt-1 text-sm text-muted-foreground">
+                  <div className="mt-1 text-sm text-white">
                     Available: {formatBalance(balance, { decimals: 10 })} XOR
                   </div>
                 </div>
@@ -328,15 +328,15 @@ const TransferFunds = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <FaCoins className="w-5 h-5 text-primary" />
+                <CardTitle className="flex items-center space-x-2 text-white">
+                  <FaCoins className="w-5 h-5 text-white" />
                   <span>Recent Transfers</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {transferHistory.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">
+                    <p className="text-sm text-white text-center py-4">
                       No transfers yet
                     </p>
                   ) : (
@@ -353,7 +353,7 @@ const TransferFunds = () => {
                             {transfer.status}
                           </Badge>
                         </div>
-                        <div className="text-xs text-muted-foreground space-y-1">
+                        <div className="text-xs text-white space-y-1">
                           <div>From: {formatAddress(transfer.from)}</div>
                           <div>To: {formatAddress(transfer.to)}</div>
                           <div>Time: {transfer.timestamp.toLocaleTimeString()}</div>
@@ -368,25 +368,25 @@ const TransferFunds = () => {
             {/* Network Info */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <FaWallet className="w-5 h-5 text-primary" />
+                <CardTitle className="flex items-center space-x-2 text-white">
+                  <FaWallet className="w-5 h-5 text-white" />
                   <span>Network Info</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Network:</span>
-                  <span className="font-medium">Polkadot</span>
+                  <span className="text-white">Network:</span>
+                  <span className="font-medium text-white">Polkadot</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Status:</span>
+                  <span className="text-white">Status:</span>
                   <Badge className="bg-green-500/20 text-green-500 border-green-500/30">
                     Connected
                   </Badge>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Endpoint:</span>
-                  <span className="font-mono text-xs">{apiState.endpoint?.slice(0, 20)}...</span>
+                  <span className="text-white">Endpoint:</span>
+                  <span className="font-mono text-xs text-white">{apiState.endpoint?.slice(0, 20)}...</span>
                 </div>
               </CardContent>
             </Card>

@@ -60,7 +60,7 @@ const StakingActions = ({
     <TabsContent value="stake" className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
+          <CardTitle className="flex items-center text-white space-x-2">
             <FaArrowUp className="w-5 h-5 text-white" />
             <span>Delegate XOR</span>
           </CardTitle>
@@ -105,7 +105,7 @@ const StakingActions = ({
     <TabsContent value="redelegate" className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
+          <CardTitle className="flex items-center text-white space-x-2">
             <FaArrowUp className="w-5 h-5 text-white" />
             <span>Redelegate XOR</span>
           </CardTitle>
@@ -150,7 +150,7 @@ const StakingActions = ({
     <TabsContent value="unstake" className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
+          <CardTitle className="flex items-center text-white space-x-2">
             <FaArrowDown className="w-5 h-5 text-white" />
             <span>Unstake XOR</span>
           </CardTitle>
@@ -178,7 +178,7 @@ const StakingActions = ({
     <TabsContent value="rewards" className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
+          <CardTitle className="flex items-center text-white space-x-2">
             <FaCoins className="w-5 h-5 text-white" />
             <span>Claim Rewards</span>
           </CardTitle>
@@ -188,7 +188,7 @@ const StakingActions = ({
             <div className="text-2xl font-bold text-foreground mb-2">
               {userStaking.pendingRewards} XOR
             </div>
-            <div className="text-sm text-muted-foreground">Available Rewards</div>
+            <div className="text-sm text-white">Available Rewards</div>
           </div>
           <button
             onClick={handleClaimRewards}

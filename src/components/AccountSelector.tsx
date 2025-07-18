@@ -14,8 +14,8 @@ interface AccountSelectorProps {
 const AccountSelector = ({ accounts, selectedAccount, setSelectedAccount, balance }: AccountSelectorProps) => (
   <Card>
     <CardHeader>
-      <CardTitle className="flex items-center space-x-2">
-        <FaWallet className="w-5 h-5 text-white" />
+      <CardTitle className="flex items-center text-white space-x-2">
+        <FaWallet className="w-5 h-5 " />
         <span>Wallet Connection</span>
       </CardTitle>
     </CardHeader>

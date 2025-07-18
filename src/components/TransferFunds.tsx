@@ -18,7 +18,6 @@ import { cn } from '@/lib/utils';
 import Footer from './Footer';
 import { u128 } from '@polkadot/types';
 import { FrameSystemAccountInfo } from '@polkadot/types/lookup';
-import CustomLoader from './ui/CustomLoader';
 
 interface TransferHistoryItem {
   id: number;
@@ -177,7 +176,7 @@ const TransferFunds = () => {
       <div className="min-h-screen bg-card p-2 sm:p-4 lg:p-6 flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="p-6 text-center">
-            <div className="flex justify-center mb-4"><CustomLoader /></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
             <h3 className="text-lg font-semibold mb-2">Connecting to Network</h3>
             <p className="text-muted-foreground mb-4">
               {apiState.status === 'connecting' ? 'Establishing connection...' :
@@ -310,7 +309,10 @@ const TransferFunds = () => {
                   className="w-full"
                 >
                   {loading ? (
-                    <div className="flex justify-center"><CustomLoader /></div>
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Processing...
+                    </>
                   ) : (
                     <>
                       <FaArrowRight className="w-4 h-4 mr-2" />

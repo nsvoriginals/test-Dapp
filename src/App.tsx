@@ -7,7 +7,7 @@ import { Suspense, lazy } from "react";
 import { ThemeProvider } from "next-themes";
 
 const queryClient = new QueryClient();
-
+import CustomLoader from "./components/ui/CustomLoader";
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -20,7 +20,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<CustomLoader/>}>
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/explorer" element={<Index />} />

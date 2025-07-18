@@ -9,7 +9,6 @@ import NetworkStatsHeader from './NetworkStatsHeader';
 import KeyMetricsGrid from './KeyMetricsGrid';
 import AdditionalMetricsGrid from './AdditionalMetricsGrid';
 import ChartsSection from './ChartsSection';
-import CustomLoader from './ui/CustomLoader';
 
 const formatNumber = (num: number) => {
   if (num >= 1e9) return `${(num / 1e9).toFixed(1)}B`;
@@ -133,7 +132,7 @@ const NetworkStats = () => {
         <Card>
           <CardContent className="p-6">
             <div className="text-center">
-              <div className="flex justify-center mb-4"><CustomLoader /></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
               <h3 className="text-lg font-semibold mb-2">
                 {apiState.status === 'connecting' ? 'Connecting to Network...' :
                  apiState.status === 'error' ? 'Connection Failed' :

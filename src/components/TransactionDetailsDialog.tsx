@@ -6,7 +6,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { FaInfoCircle, FaTimesCircle, FaArrowLeft, FaCopy } from 'react-icons/fa';
 import React from 'react';
 import { cn } from '@/lib/utils';
-import CustomLoader from './ui/CustomLoader';
 
 interface DecodedArg {
   name: string;
@@ -77,7 +76,7 @@ const TransactionDetailsDialog: React.FC<TransactionDetailsDialogProps> = ({
           {isDetailsLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
-                <div className="flex justify-center mb-4"><CustomLoader /></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
                 <p className="text-muted-foreground">Loading transaction details...</p>
               </div>
             </div>

@@ -18,6 +18,7 @@ export class AirdropManager {
       const airdropAmount = await this.api.consts.airdrop.airdropAmount;
       const maxPerBlock = await this.api.consts.airdrop.maxAirdropsPerBlock;
       const cooldownPeriod = await this.api.consts.airdrop.cooldownPeriod;
+
       return {
         totalAirdrops: totalAirdrops.toHuman(),
         airdropsThisBlock: airdropsThisBlock.toHuman(),
@@ -34,6 +35,7 @@ export class AirdropManager {
   async claimAirdrop() {
     try {
       const injector = await web3FromAddress(this.account.address);
+
       const unsub = await this.api.tx.airdrop
         .claimAirdrop()
         .signAndSend(this.account.address, { signer: injector.signer }, (result) => {
@@ -50,6 +52,7 @@ export class AirdropManager {
             unsub();
           }
         });
+
       return unsub;
     } catch (error) {
       console.error('Error claiming airdrop:', error);
@@ -59,46 +62,48 @@ export class AirdropManager {
 
   async checkEligibility() {
     try {
-      const claimed = await this.api.query.airdrop.claimed(this.account.address);
-      const isClaimed = claimed.toJSON() === true;
-      return { eligible: !isClaimed, claimed: isClaimed };
+      const userBalance = await this.api.query.system.account(this.account.address);
+      const json = userBalance.toJSON();
+      let free = '0';
+      if (json && typeof json === 'object' && 'free' in json) {
+        free = json.free?.toString() || '0';
+      }
+
+      const userFree = new BN(free);
+      const eligible = userFree.gt(new BN(0)); // Check if user has any balance
+
+      return { eligible, claimed: false };
     } catch (e) {
       return { eligible: false, error: e };
     }
   }
 
-  // Total allocated for airdrops (hardcoded or via chain storage)
   async getTotalXorAllocated() {
-    // Hardcoded or stored in a constant
-    return BigInt(1_000_000 * 1e18); // 1 million XOR
+    try {
+      const total = await this.api.query.airdrop.totalAirdropAllocation?.();
+      if (total) return total.toString(); // If stored on-chain
+    } catch {}
+    return (BigInt(1_000_000 * 1e18)).toString(); // Fallback
   }
 
-  // Remaining XOR in the pool
   async getRemainingXor() {
     try {
-      const poolBalance = await this.api.query.system.account(this.account.address); // Replace with actual sovereign pool if exists
-      const json = poolBalance.toJSON();
-      let free = '0';
-      if (json && typeof json === 'object' && 'free' in json) {
-        free = json.free?.toString() || '0';
-      }
-      return free; // in plancks
-    } catch (e) {
-      console.error('Error getting remaining balance:', e);
-      return '0';
-    }
+      const remaining = await this.api.query.airdrop.remainingAirdropBalance?.();
+      if (remaining) return remaining.toString();
+    } catch {}
+    return '0';
   }
 
-  // Max per account (constant)
   async getMaxPerAccount() {
     try {
       const maxPer = this.api.consts.airdrop.maxAirdropsPerAccount;
       const airdropAmount = this.api.consts.airdrop.airdropAmount;
-      // Convert to BN for multiplication
+
       const maxPerBN = new BN(maxPer.toString());
       const airdropAmountBN = new BN(airdropAmount.toString());
-      return maxPerBN.mul(airdropAmountBN).toString(); // Planck value
-    } catch (e) {
+
+      return maxPerBN.mul(airdropAmountBN).toString();
+    } catch {
       return '0';
     }
   }

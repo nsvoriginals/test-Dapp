@@ -63,23 +63,34 @@ const AirdropPanel: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!airdropManager) return;
+    if (!account) return;
     (async () => {
-      setStats(await airdropManager.getAirdropStats());
-      setEligibility(await airdropManager.checkEligibility());
-      setTotalAllocated((await airdropManager.getTotalXorAllocated()).toString());
-      setRemainingXor((await airdropManager.getRemainingXor()).toString());
-      setMaxPerAccount((await airdropManager.getMaxPerAccount()).toString());
+      // Replace all airdropManager calls with backend API calls
+      // Example endpoints: /api/airdrop/stats, /api/airdrop/eligibility, etc.
+      const statsRes = await fetch(`/api/airdrop/stats`).then(r => r.json());
+      setStats(statsRes);
+      const eligibilityRes = await fetch(`/api/airdrop/eligibility?address=${account.address}`).then(r => r.json());
+      setEligibility(eligibilityRes);
+      setTotalAllocated(statsRes.totalAllocated?.toString() || '0');
+      setRemainingXor(statsRes.remainingXor?.toString() || '0');
+      setMaxPerAccount(statsRes.maxPerAccount?.toString() || '0');
       setLoading(false);
     })();
-  }, [airdropManager]);
+  }, [account]);
 
   const handleClaim = async () => {
-    if (!airdropManager) return;
+    if (!account) return;
     setClaiming(true);
     try {
-      await airdropManager.claimAirdrop();
-      setClaimed(true);
+      // Call backend claim endpoint
+      const res = await fetch(`/api/airdrop/claim`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: account.address })
+      });
+      const data = await res.json();
+      if (data.success) setClaimed(true);
+      else alert(data.error || 'Failed to claim airdrop');
     } catch (e) {
       alert('Failed to claim airdrop');
     } finally {

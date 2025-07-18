@@ -13,6 +13,12 @@ const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ExplorerPage = lazy(() => import("./pages/ExplorerPage"));
 
+const Load=()=>{
+  return <div className="w-screen h-screen flex items-center justify-center">
+    <CustomLoader></CustomLoader>
+  </div>
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
@@ -20,7 +26,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Suspense fallback={<CustomLoader/>}>
+          <Suspense fallback={<Load/>}>
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/explorer" element={<Index />} />

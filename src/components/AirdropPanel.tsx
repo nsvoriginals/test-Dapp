@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAirdrop } from '../hooks/useAirdrop';
 import { useToast } from '../hooks/use-toast';
 import { ToastAction } from '../components/ui/toast';
+import BN from 'bn.js';
 
 function formatXOR(amount: any) {
   let value = typeof amount === 'string' ? amount.replace(/,/g, '') : amount;
@@ -40,7 +41,6 @@ const AirdropPanel: React.FC = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Show connect wallet warning if no account
     if (!account) {
       toast({
         title: 'Connect Wallet',
@@ -48,7 +48,6 @@ const AirdropPanel: React.FC = () => {
         duration: 6000,
       });
     }
-    // Show follow us on X toast every time
     toast({
       title: 'Follow us on X',
       description: 'Stay updated! Follow us on X (Twitter) for the latest news.',
@@ -59,40 +58,48 @@ const AirdropPanel: React.FC = () => {
         </ToastAction>
       ),
     });
-    // eslint-disable-next-line
   }, []);
 
   useEffect(() => {
-    if (!account) return;
+    if (!airdropManager || !account) return;
     (async () => {
-      // Replace all airdropManager calls with backend API calls
-      // Example endpoints: /api/airdrop/stats, /api/airdrop/eligibility, etc.
-      const statsRes = await fetch(`/api/airdrop/stats`).then(r => r.json());
-      setStats(statsRes);
-      const eligibilityRes = await fetch(`/api/airdrop/eligibility?address=${account.address}`).then(r => r.json());
-      setEligibility(eligibilityRes);
-      setTotalAllocated(statsRes.totalAllocated?.toString() || '0');
-      setRemainingXor(statsRes.remainingXor?.toString() || '0');
-      setMaxPerAccount(statsRes.maxPerAccount?.toString() || '0');
-      setLoading(false);
+      setLoading(true);
+      try {
+        const stats = await airdropManager.getAirdropStats();
+        const eligible = await airdropManager.checkEligibility();
+        const total = await airdropManager.getTotalXorAllocated();
+        const remaining = await airdropManager.getRemainingXor();
+        const max = await airdropManager.getMaxPerAccount();
+
+        setStats(stats);
+        setEligibility(eligible);
+        setTotalAllocated(total);
+        setRemainingXor(remaining);
+        setMaxPerAccount(max);
+      } catch (e: any) {
+        console.error('Error loading airdrop data:', e.message);
+      } finally {
+        setLoading(false);
+      }
     })();
-  }, [account]);
+  }, [airdropManager, account]);
 
   const handleClaim = async () => {
-    if (!account) return;
+    if (!airdropManager || !account) return;
     setClaiming(true);
     try {
-      // Call backend claim endpoint
-      const res = await fetch(`/api/airdrop/claim`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: account.address })
+      await airdropManager.claimAirdrop();
+      setClaimed(true);
+      toast({
+        title: 'Success',
+        description: 'Airdrop claimed successfully!',
       });
-      const data = await res.json();
-      if (data.success) setClaimed(true);
-      else alert(data.error || 'Failed to claim airdrop');
-    } catch (e) {
-      alert('Failed to claim airdrop');
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to claim airdrop',
+        variant: 'destructive',
+      });
     } finally {
       setClaiming(false);
     }
@@ -103,46 +110,34 @@ const AirdropPanel: React.FC = () => {
   return (
     <div className="relative rounded-2xl p-8 shadow-xl bg-black/70 border border-white/10 backdrop-blur-xl overflow-hidden">
       <h2 className="text-2xl font-extrabold mb-8 text-white tracking-tight">Airdrop XOR TOKEN</h2>
-      {/* New info cards */}
+
+      {/* Pool Info */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
-        <div className={`rounded-2xl p-5 border shadow ${cardColors[0]}`}>
-          <div className="text-sm font-semibold text-blue-200 mb-1">Total Airdrop Pool</div>
-          <div className="text-2xl font-bold text-white">{formatXOR(totalAllocated)}</div>
-        </div>
-        <div className={`rounded-2xl p-5 border shadow ${cardColors[1]}`}>
-          <div className="text-sm font-semibold text-purple-200 mb-1">Max Per Address</div>
-          <div className="text-2xl font-bold text-white">{formatXOR(maxPerAccount)}</div>
-        </div>
-        <div className={`rounded-2xl p-5 border shadow ${cardColors[2]}`}>
-          <div className="text-sm font-semibold text-green-200 mb-1">Remaining in Pool</div>
-          <div className="text-2xl font-bold text-white">{formatXOR(remainingXor)}</div>
-        </div>
+        <InfoCard title="Total Airdrop Pool" value={formatXOR(totalAllocated)} color={cardColors[0]} />
+        <InfoCard title="Max Per Address" value={formatXOR(maxPerAccount)} color={cardColors[1]} />
+        <InfoCard title="Remaining in Pool" value={formatXOR(remainingXor)} color={cardColors[2]} />
       </div>
-      {/* Original stats and eligibility */}
+
+      {/* Chain Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-        <div className={`rounded-2xl p-5 border shadow ${cardColors[0]}`}>
-          <div className="text-sm font-semibold text-blue-200 mb-1">Total Airdrops</div>
-          <div className="text-2xl font-bold text-white">{stats?.totalAirdrops ? formatXOR(stats.totalAirdrops) : '-'}</div>
-        </div>
-        <div className={`rounded-2xl p-5 border shadow ${cardColors[1]}`}>
-          <div className="text-sm font-semibold text-purple-200 mb-1">Airdrops This Block</div>
-          <div className="text-2xl font-bold text-white">{stats?.airdropsThisBlock ? formatXOR(stats.airdropsThisBlock) : '-'}</div>
-        </div>
-        <div className={`rounded-2xl p-5 border shadow ${cardColors[2]}`}>
-          <div className="text-sm font-semibold text-green-200 mb-1">Airdrop Amount</div>
-          <div className="text-2xl font-bold text-white">{stats?.airdropAmount ? formatXOR(stats.airdropAmount) : '-'}</div>
-        </div>
-        <div className={`rounded-2xl p-5 border shadow ${cardColors[3]}`}>
-          <div className="text-sm font-semibold text-yellow-200 mb-1">Max Per Block</div>
-          <div className="text-2xl font-bold text-white">{stats?.maxPerBlock ? formatXOR(stats.maxPerBlock) : '-'}</div>
-        </div>
+        <InfoCard title="Total Airdrops" value={stats?.totalAirdrops || '-'} color={cardColors[0]} />
+        <InfoCard title="Airdrops This Block" value={stats?.airdropsThisBlock || '-'} color={cardColors[1]} />
+        <InfoCard title="Airdrop Amount" value={stats?.airdropAmount || '-'} color={cardColors[2]} />
+        <InfoCard title="Max Per Block" value={stats?.maxPerBlock || '-'} color={cardColors[3]} />
       </div>
+
+      {/* Eligibility */}
       <div className="mb-8">
         <div className="text-xs text-white/80 uppercase font-semibold mb-1">Eligibility</div>
-        <div className={`text-lg font-bold ${eligibility?.eligible ? 'text-green-300' : eligibility?.claimed ? 'text-yellow-300' : 'text-red-300'} drop-shadow`}>
-          {eligibility?.eligible ? "Eligible" : eligibility?.claimed ? "Already Claimed" : "Not Eligible"}
+        <div className={`text-lg font-bold ${
+          eligibility?.eligible ? 'text-green-300' :
+          claimed ? 'text-yellow-300' : 'text-red-300'
+        } drop-shadow`}>
+          {eligibility?.eligible ? "Eligible" : claimed ? "Already Claimed" : "Not Eligible"}
         </div>
       </div>
+
+      {/* Claim Button */}
       <button
         className="w-full py-3 rounded-xl font-bold text-lg bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         onClick={handleClaim}
@@ -154,4 +149,11 @@ const AirdropPanel: React.FC = () => {
   );
 };
 
-export default AirdropPanel; 
+const InfoCard = ({ title, value, color }: { title: string; value: string; color: string }) => (
+  <div className={`rounded-2xl p-5 border shadow ${color}`}>
+    <div className="text-sm font-semibold text-white/70 mb-1">{title}</div>
+    <div className="text-2xl font-bold text-white">{value}</div>
+  </div>
+);
+
+export default AirdropPanel;

@@ -5,10 +5,12 @@ import BN from 'bn.js';
 export class AirdropManager {
   api: ApiPromise;
   account: any;
+  poolAddress: string;
 
-  constructor(api: ApiPromise, account: any) {
+  constructor(api: ApiPromise, account: any, poolAddress?: string) {
     this.api = api;
     this.account = account;
+    this.poolAddress = poolAddress || '5F3sa2TJAWMqDhXG6jhV4N8ko9rTzWy7k1d8n8t6zF7kG7ZkS';
   }
 
   async getAirdropStats() {
@@ -18,7 +20,6 @@ export class AirdropManager {
       const airdropAmount = await this.api.consts.airdrop.airdropAmount;
       const maxPerBlock = await this.api.consts.airdrop.maxAirdropsPerBlock;
       const cooldownPeriod = await this.api.consts.airdrop.cooldownPeriod;
-
       return {
         totalAirdrops: totalAirdrops.toHuman(),
         airdropsThisBlock: airdropsThisBlock.toHuman(),
@@ -35,7 +36,6 @@ export class AirdropManager {
   async claimAirdrop() {
     try {
       const injector = await web3FromAddress(this.account.address);
-
       const unsub = await this.api.tx.airdrop
         .claimAirdrop()
         .signAndSend(this.account.address, { signer: injector.signer }, (result) => {
@@ -52,7 +52,6 @@ export class AirdropManager {
             unsub();
           }
         });
-
       return unsub;
     } catch (error) {
       console.error('Error claiming airdrop:', error);
@@ -60,6 +59,7 @@ export class AirdropManager {
     }
   }
 
+  // Check eligibility based on native XOR balance (must have 0 XOR to be eligible)
   async checkEligibility() {
     try {
       const userBalance = await this.api.query.system.account(this.account.address);
@@ -68,10 +68,8 @@ export class AirdropManager {
       if (json && typeof json === 'object' && 'free' in json) {
         free = json.free?.toString() || '0';
       }
-
       const userFree = new BN(free);
-      const eligible = userFree.gt(new BN(0)); // Check if user has any balance
-
+      const eligible = userFree.eq(new BN(0));
       return { eligible, claimed: false };
     } catch (e) {
       return { eligible: false, error: e };
@@ -79,31 +77,32 @@ export class AirdropManager {
   }
 
   async getTotalXorAllocated() {
-    try {
-      const total = await this.api.query.airdrop.totalAirdropAllocation?.();
-      if (total) return total.toString(); // If stored on-chain
-    } catch {}
-    return (BigInt(1_000_000 * 1e18)).toString(); // Fallback
+    return BigInt(1_000_000 * 1e18);
   }
 
   async getRemainingXor() {
     try {
-      const remaining = await this.api.query.airdrop.remainingAirdropBalance?.();
-      if (remaining) return remaining.toString();
-    } catch {}
-    return '0';
+      const poolBalance = await this.api.query.system.account(this.poolAddress);
+      const json = poolBalance.toJSON();
+      let free = '0';
+      if (json && typeof json === 'object' && 'free' in json) {
+        free = json.free?.toString() || '0';
+      }
+      return free;
+    } catch (e) {
+      console.error('Error getting remaining balance:', e);
+      return '0';
+    }
   }
 
   async getMaxPerAccount() {
     try {
       const maxPer = this.api.consts.airdrop.maxAirdropsPerAccount;
       const airdropAmount = this.api.consts.airdrop.airdropAmount;
-
       const maxPerBN = new BN(maxPer.toString());
       const airdropAmountBN = new BN(airdropAmount.toString());
-
       return maxPerBN.mul(airdropAmountBN).toString();
-    } catch {
+    } catch (e) {
       return '0';
     }
   }

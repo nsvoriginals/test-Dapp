@@ -11,7 +11,7 @@ export function useAirdrop() {
   useEffect(() => {
     (async () => {
       await web3Enable('Airdrop DApp');
-      const wsProvider = new WsProvider('ws://3.219.48.230:9944');
+      const wsProvider = new WsProvider('wss://ws-proxy-latest-jds3.onrender.com');
       const api = await ApiPromise.create({ provider: wsProvider });
       setApi(api);
 

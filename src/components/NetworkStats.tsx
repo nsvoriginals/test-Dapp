@@ -220,5 +220,4 @@ const NetworkStats = () => {
     </section>
   );
 };
-
 export default NetworkStats;

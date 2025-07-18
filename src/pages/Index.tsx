@@ -7,6 +7,9 @@ import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import Footer from '@/components/Footer';
+import AirdropPanel from '@/components/AirdropPanel';
+import { Label } from 'recharts';
+import { GiTwoCoins } from "react-icons/gi"
 //import NavigationBar from '@/components/NavigationBar';
 
 const StakingInterface = lazy(() => import('@/components/StakingInterface'));
@@ -115,6 +118,7 @@ const Index = () => {
     { id: 'validators', label: 'Validators', icon: FaUsers },
     { id: 'transactions', label: 'Transactions', icon: FaBolt },
     { id: 'transfer', label: 'Transfer', icon: FaPaperPlane },
+    {id:'airdrop', label:'Airdrop' ,icon:GiTwoCoins }
   ];
 
   const renderContent = () => {
@@ -137,6 +141,12 @@ const Index = () => {
         return (
           <Suspense fallback={<div>Loading transactions...</div>}>
             <TransactionExplorer />
+          </Suspense>
+        );
+      case 'airdrop':
+        return (
+          <Suspense fallback={<div>Loading transfer...</div>}>
+            <AirdropPanel />
           </Suspense>
         );
       case 'transfer':

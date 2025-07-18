@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaChartLine, FaShieldAlt, FaExchangeAlt, FaRocket, FaSearch } from 'react-icons/fa';
 import Header from '@/components/Header';
+import AirdropPanel from '../components/AirdropPanel';
 
 const navItems = [
   { id: 'blocks', label: 'Blocks', icon: FaChartLine },
@@ -9,6 +10,7 @@ const navItems = [
   { id: 'validators', label: 'Validators', icon: FaShieldAlt },
   { id: 'contracts', label: 'Contracts', icon: FaRocket },
   { id: 'search', label: 'Search', icon: FaSearch },
+  { id: 'airdrop', label: 'Airdrop', icon: FaRocket }, // Added Airdrop tab
 ];
 
 const ExplorerPage = () => {
@@ -63,6 +65,7 @@ const ExplorerPage = () => {
           {activeTab === 'validators' && <div>Validators Content</div>}
           {activeTab === 'contracts' && <div>Contracts Content</div>}
           {activeTab === 'search' && <div>Search Content</div>}
+          {activeTab === 'airdrop' && <AirdropPanel />}
         </div>
       </div>
     </div>

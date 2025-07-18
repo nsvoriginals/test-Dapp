@@ -1,5 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import React from 'react';
+import CustomLoader from './ui/CustomLoader';
 
 interface ConnectionStatusCardProps {
   apiState: {
@@ -14,7 +15,7 @@ const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({ apiState })
   <div className="min-h-screen bg-card p-2 sm:p-4 lg:p-6 flex items-center justify-center">
     <Card className="w-full max-w-md">
       <CardContent className="p-6 text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+        <div className="flex justify-center mb-4"><CustomLoader /></div>
         <h3 className="text-lg font-semibold mb-2">
           {apiState.status === 'connecting' ? 'Connecting to Network...' :
            apiState.status === 'error' ? 'Connection Failed' :

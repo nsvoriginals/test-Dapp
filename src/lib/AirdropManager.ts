@@ -1,26 +1,43 @@
 import { ApiPromise } from '@polkadot/api';
 import { web3FromAddress } from '@polkadot/extension-dapp';
+import { InjectedAccountWithMeta } from '@polkadot/extension-inject/types';
+import { Codec } from '@polkadot/types/types';
 import BN from 'bn.js';
 
-export class AirdropManager {
-  api: ApiPromise;
-  account: any;
+// Define a type for the stats object for clarity
+interface AirdropStats {
+  totalAirdrops: string | number;
+  airdropsThisBlock: string | number;
+  airdropAmount: string | number | Codec;
+  maxPerBlock: string | number | Codec;
+  cooldownPeriod: string | number | Codec;
+}
 
-  constructor(api: ApiPromise, account: any) {
+// Define a type for the eligibility object
+interface Eligibility {
+  eligible: boolean;
+  claimed: boolean;
+  error?: string;
+}
+
+export class AirdropManager {
+  // Use the specific InjectedAccountWithMeta type instead of any
+  public api: ApiPromise;
+  public account: InjectedAccountWithMeta;
+
+  constructor(api: ApiPromise, account: InjectedAccountWithMeta) {
     this.api = api;
     this.account = account;
     console.log('AirdropManager initialized with:', {
       api: !!api,
-      account: account?.address
+      account: account?.address,
     });
   }
 
-  async getAirdropStats() {
+  public async getAirdropStats(): Promise<AirdropStats> {
     try {
       console.log('Fetching airdrop stats...');
-      if (!this.api.isReady) {
-        await this.api.isReady;
-      }
+      await this.api.isReady;
 
       if (!this.api.query.airdrop || !this.api.consts.airdrop) {
         console.error('Airdrop pallet not found in API');
@@ -31,17 +48,13 @@ export class AirdropManager {
         this.api.query.airdrop.totalAirdrops(),
         this.api.query.airdrop.airdropsThisBlock(),
       ]);
-      
-      const airdropAmount = this.api.consts.airdrop.airdropAmount;
-      const maxPerBlock = this.api.consts.airdrop.maxAirdropsPerBlock;
-      const cooldownPeriod = this.api.consts.airdrop.cooldownPeriod;
 
-      const stats = {
+      const stats: AirdropStats = {
         totalAirdrops: totalAirdrops.toHuman(),
         airdropsThisBlock: airdropsThisBlock.toHuman(),
-        airdropAmount: airdropAmount.toHuman(),
-        maxPerBlock: maxPerBlock.toHuman(),
-        cooldownPeriod: cooldownPeriod.toHuman(),
+        airdropAmount: this.api.consts.airdrop.airdropAmount.toHuman(),
+        maxPerBlock: this.api.consts.airdrop.maxAirdropsPerBlock.toHuman(),
+        cooldownPeriod: this.api.consts.airdrop.cooldownPeriod.toHuman(),
       };
 
       console.log('Airdrop stats retrieved:', stats);
@@ -52,7 +65,7 @@ export class AirdropManager {
     }
   }
 
-  getFallbackStats() {
+  public getFallbackStats(): AirdropStats {
     return {
       totalAirdrops: '0',
       airdropsThisBlock: '0',
@@ -62,7 +75,7 @@ export class AirdropManager {
     };
   }
 
-  async claimAirdrop() {
+  public async claimAirdrop(): Promise<() => void> {
     if (!this.account?.address) {
       throw new Error('No account connected');
     }
@@ -72,12 +85,14 @@ export class AirdropManager {
 
     console.log('Claiming airdrop for:', this.account.address);
     const injector = await web3FromAddress(this.account.address);
+
+    // Explicitly type the result of signAndSend
     const unsub = await this.api.tx.airdrop
       .claimAirdrop()
       .signAndSend(this.account.address, { signer: injector.signer }, (result) => {
         console.log('Transaction status:', result.status.type);
         if (result.status.isInBlock) {
-          console.log('Transaction included in block:', result.status.asInBlock.toHex());
+          console.log(`Transaction included in block: ${result.status.asInBlock.toHex()}`);
           result.events.forEach(({ event: { data, method, section } }) => {
             console.log(`Event: ${section}.${method}`, data.toHuman());
             if (section === 'airdrop' && method === 'AirdropClaimed') {
@@ -92,28 +107,29 @@ export class AirdropManager {
     return unsub;
   }
 
-  async checkEligibility() {
+  public async checkEligibility(): Promise<Eligibility> {
     try {
       if (!this.account?.address) {
         return { eligible: false, claimed: false, error: 'No account' };
       }
       if (!this.api.rpc.airdrop?.isEligibleForAirdrop) {
         console.error('RPC airdrop.isEligibleForAirdrop not found');
-        return { eligible: false, error: 'Eligibility check unavailable.' };
+        return { eligible: false, claimed: false, error: 'Eligibility check unavailable.' };
       }
 
       const isEligible = await this.api.rpc.airdrop.isEligibleForAirdrop(this.account.address);
-      const eligible = isEligible?.isTrue || false;
+      // The RPC call returns a boolean Codec, so we check its value
+      const eligible = isEligible.isTrue || false;
       
       console.log('Eligibility check result:', { eligible });
       return { eligible, claimed: false };
-    } catch (e) {
+    } catch (e: unknown) { // Use 'unknown' for better type safety in catch blocks
       console.error('Error checking eligibility:', e);
-      return { eligible: false, error: e.message };
+      return { eligible: false, claimed: false, error: (e as Error).message };
     }
   }
 
-  async getRemainingXor() {
+  public async getRemainingXor(): Promise<string> {
     try {
       if (!this.account?.address) return '0';
       if (!this.api.rpc.airdrop?.getAirdropPoolBalance) {
@@ -122,19 +138,19 @@ export class AirdropManager {
       }
 
       const poolBalance = await this.api.rpc.airdrop.getAirdropPoolBalance(this.account.address);
-      return poolBalance?.toBn ? poolBalance.toBn().toString() : poolBalance?.toString?.() || '0';
+      return poolBalance ? poolBalance.toString() : '0';
     } catch (e) {
       console.error('Error getting remaining balance via RPC:', e);
       return '0';
     }
   }
   
-  async getTotalXorAllocated() {
+  public async getTotalXorAllocated(): Promise<bigint> {
     // This can be a hardcoded value or fetched from a constant if available
     return BigInt(1_000_000 * 1e18);
   }
 
-  async getMaxPerAccount() {
+  public async getMaxPerAccount(): Promise<string> {
     try {
       if (!this.api.consts.airdrop?.maxAirdropsPerAccount || !this.api.consts.airdrop?.airdropAmount) {
         console.warn('Airdrop constants for max per account not found, using fallback');
@@ -154,7 +170,7 @@ export class AirdropManager {
     }
   }
 
-  subscribeToEvents(callback: (event: any) => void) {
+  public subscribeToEvents(callback: (event: any) => void): Promise<() => void> {
     console.log('Subscribing to airdrop events');
     return this.api.query.system.events((events) => {
       events.forEach((record) => {

@@ -4,20 +4,31 @@ import { useToast } from '../hooks/use-toast';
 import { ToastAction } from '../components/ui/toast';
 import BN from 'bn.js';
 
-function formatXOR(amount: any) {
-  let value = typeof amount === 'string' ? amount.replace(/,/g, '') : amount;
+function formatXOR(amount: any): string {
+  console.log('Formatting XOR amount:', amount, typeof amount);
+
+  if (amount === null || amount === undefined || amount === '0' || amount === 0) {
+    return '0.000000 XOR';
+  }
+
+  // Sanitize input by removing commas which BigInt doesn't support
+  const value = String(amount).replace(/,/g, '');
+
   try {
-    const base = BigInt(1e18);
-    const big = BigInt(value);
-    const whole = big / base;
-    const fraction = big % base;
+    const base = BigInt('1000000000000000000'); // 10**18
+    const bigValue = BigInt(value);
+    
+    const whole = bigValue / base;
+    const fraction = bigValue % base;
+    
+    // Pad the fractional part to ensure it has 18 digits before slicing
     const fractionStr = fraction.toString().padStart(18, '0').slice(0, 6);
+    
     return `${whole.toString()}.${fractionStr} XOR`;
-  } catch {
-    if (!isNaN(Number(value))) {
-      return (Number(value) / 1e18).toFixed(6) + ' XOR';
-    }
-    return value;
+  } catch (error) {
+    console.error(`Error in BigInt formatting for value: "${value}"`, error);
+    // Return a safe, indicative value if formatting fails
+    return 'Invalid Amount';
   }
 }
 
@@ -29,7 +40,7 @@ const cardColors = [
 ];
 
 const AirdropPanel: React.FC = () => {
-  const { api, account, airdropManager } = useAirdrop();
+  const { api, account, airdropManager, connectionStatus, error, isConnected } = useAirdrop();
   const [stats, setStats] = useState<any>(null);
   const [eligibility, setEligibility] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -61,10 +72,18 @@ const AirdropPanel: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!airdropManager || !account) return;
-    (async () => {
+    // Check if the manager is ready and an account is selected.
+    if (!airdropManager || !account) {
+      console.log('Airdrop manager or account not ready, skipping data fetch');
+      setLoading(false); // Stop loading if we can't fetch.
+      return;
+    }
+
+    const fetchData = async () => {
       setLoading(true);
       try {
+        console.log('Fetching airdrop data for account:', account.address);
+        
         const stats = await airdropManager.getAirdropStats();
         const eligible = await airdropManager.checkEligibility();
         const total = await airdropManager.getTotalXorAllocated();
@@ -73,16 +92,27 @@ const AirdropPanel: React.FC = () => {
 
         setStats(stats);
         setEligibility(eligible);
-        setTotalAllocated(total);
-        setRemainingXor(remaining);
-        setMaxPerAccount(max);
+        setTotalAllocated(total.toString());
+        setRemainingXor(remaining.toString());
+        setMaxPerAccount(max.toString());
+        
+        console.log('Airdrop data fetched successfully');
       } catch (e: any) {
         console.error('Error loading airdrop data:', e.message);
+        toast({
+          title: 'Error',
+          description: 'Failed to load airdrop data. Please try again.',
+          variant: 'destructive',
+        });
       } finally {
         setLoading(false);
       }
-    })();
-  }, [airdropManager, account]);
+    };
+
+    fetchData();
+    
+    // Add account as a dependency to refetch when the user changes accounts.
+  }, [airdropManager, account, toast]); 
 
   const handleClaim = async () => {
     if (!airdropManager || !account) return;
@@ -105,7 +135,24 @@ const AirdropPanel: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="text-white">Loading...</div>;
+  // Show connection status
+  if (connectionStatus === 'connecting') {
+    return <div className="text-white">Connecting to blockchain...</div>;
+  }
+
+  if (connectionStatus === 'error') {
+    return (
+      <div className="text-red-300">
+        Connection error: {error}
+      </div>
+    );
+  }
+
+  if (!isConnected) {
+    return <div className="text-white">Please connect your wallet to view airdrop information.</div>;
+  }
+
+  if (loading) return <div className="text-white">Loading airdrop data...</div>;
 
   return (
     <div className="relative rounded-2xl p-8 shadow-xl bg-black/70 border border-white/10 backdrop-blur-xl overflow-hidden">
@@ -152,7 +199,13 @@ const AirdropPanel: React.FC = () => {
 const InfoCard = ({ title, value, color }: { title: string; value: string; color: string }) => (
   <div className={`rounded-2xl p-5 border shadow ${color}`}>
     <div className="text-sm font-semibold text-white/70 mb-1">{title}</div>
-    <div className="text-2xl font-bold text-white">{value}</div>
+    <div
+      className="text-2xl font-bold text-white overflow-hidden text-ellipsis whitespace-nowrap break-all"
+      style={{ maxWidth: '100%' }}
+      title={value}
+    >
+      {value}
+    </div>
   </div>
 );
 

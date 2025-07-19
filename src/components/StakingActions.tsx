@@ -51,12 +51,33 @@ const StakingActions = ({
   handleClaimRewards
 }: StakingActionsProps) => (
   <Tabs defaultValue="stake" className="space-y-4">
-    <TabsList className="grid w-full grid-cols-4 bg-zinc-300 rounded-lg p-1">
-      <TabsTrigger value="stake" className="data-[state=active]:bg-zinc-300 data-[state=active]:text-zinc-900 data-[state=active]:shadow-sm text-zinc-600 font-medium rounded-md transition-colors">Stake</TabsTrigger>
-      <TabsTrigger value="redelegate" className="data-[state=active]:bg-zinc-300 data-[state=active]:text-zinc-900 data-[state=active]:shadow-sm text-zinc-600 font-medium rounded-md transition-colors">Redelegate</TabsTrigger>
-      <TabsTrigger value="unstake" className="data-[state=active]:bg-zinc-300 data-[state=active]:text-zinc-900 data-[state=active]:shadow-sm text-zinc-600 font-medium rounded-md transition-colors">Unstake</TabsTrigger>
-      <TabsTrigger value="rewards" className="data-[state=active]:bg-zinc-300 data-[state=active]:text-zinc-900 data-[state=active]:shadow-sm text-zinc-600 font-medium rounded-md transition-colors">Rewards</TabsTrigger>
-    </TabsList>
+   <TabsList className="grid w-full grid-cols-4 bg-zinc-300 rounded-lg p-1">
+  <TabsTrigger
+    value="stake"
+    className="data-[state=active]:bg-black data-[state=active]:text-white text-black font-medium rounded-md transition-colors"
+  >
+    Stake
+  </TabsTrigger>
+  <TabsTrigger
+    value="redelegate"
+    className="data-[state=active]:bg-black data-[state=active]:text-white text-black font-medium rounded-md transition-colors"
+  >
+    Redelegate
+  </TabsTrigger>
+  <TabsTrigger
+    value="unstake"
+    className="data-[state=active]:bg-black data-[state=active]:text-white text-black font-medium rounded-md transition-colors"
+  >
+    Unstake
+  </TabsTrigger>
+  <TabsTrigger
+    value="rewards"
+    className="data-[state=active]:bg-black data-[state=active]:text-white text-black font-medium rounded-md transition-colors"
+  >
+    Rewards
+  </TabsTrigger>
+</TabsList>
+
     <TabsContent value="stake" className="space-y-4">
       <Card>
         <CardHeader>

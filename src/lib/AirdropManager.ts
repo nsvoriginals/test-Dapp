@@ -109,24 +109,38 @@ export class AirdropManager {
 
   public async checkEligibility(): Promise<Eligibility> {
     try {
-      if (!this.account?.address) {
-        return { eligible: false, claimed: false, error: 'No account' };
-      }
-      if (!this.api.rpc.airdrop?.isEligibleForAirdrop) {
-        console.error('RPC airdrop.isEligibleForAirdrop not found');
-        return { eligible: false, claimed: false, error: 'Eligibility check unavailable.' };
-      }
+  if (!this.account?.address) {
+    return { eligible: false, claimed: false, error: 'No account' };
+  }
 
-      const isEligible = await this.api.rpc.airdrop.isEligibleForAirdrop(this.account.address);
-      // The RPC call returns a boolean Codec, so we check its value
-      const eligible = isEligible.isTrue || false;
-      
-      console.log('Eligibility check result:', { eligible });
-      return { eligible, claimed: false };
-    } catch (e: unknown) { // Use 'unknown' for better type safety in catch blocks
-      console.error('Error checking eligibility:', e);
-      return { eligible: false, claimed: false, error: (e as Error).message };
-    }
+  // Step 1: Check XOR balance
+  const { data: { free } } = await this.api.query.system.account(this.account.address);
+  const hasXOR = free.gt(new BN(0));
+
+  if (!hasXOR) {
+    console.log('User has no XOR tokens');
+    return { eligible: false, claimed: false, error: 'User has no XOR tokens' };
+  }
+
+  console.log('User has XOR tokens');
+
+  // Step 2: Check if RPC method exists
+  if (!this.api.rpc.airdrop?.isEligibleForAirdrop) {
+    console.error('RPC airdrop.isEligibleForAirdrop not found');
+    return { eligible: false, claimed: false, error: 'Eligibility check unavailable.' };
+  }
+
+  // Step 3: Check eligibility
+  const isEligible = await this.api.rpc.airdrop.isEligibleForAirdrop(this.account.address);
+  const eligible = isEligible.isTrue || false;
+
+  console.log('Eligibility check result:', { eligible });
+  return { eligible, claimed: false };
+
+} catch (e: unknown) {
+  console.error('Error checking eligibility:', e);
+  return { eligible: false, claimed: false, error: (e as Error).message };
+}
   }
 
   public async getRemainingXor(): Promise<string> {

@@ -97,17 +97,33 @@ const TransferFunds = () => {
       let transferTx;
       
       if (selectedToken === 'XOR') {
+        // Check if balances pallet and transfer method exist
+        if (!api.tx.balances || !api.tx.balances.transfer) {
+          toast({ title: 'Balances pallet not available', description: 'The connected chain does not support balances transfers.', variant: 'destructive' });
+          setLoading(false);
+          return;
+        }
         // Transfer native XOR tokens
         const value = api.createType('Balance', amount.replace(/,/g, ''));
         transferTx = api.tx.balances.transfer(recipient, value);
       } else {
-        // Transfer XOR tokens via assets pallet (if available)
+        // Check if assets pallet and transfer method exist
+        if (!api.tx.assets || !api.tx.assets.transfer) {
+          toast({ title: 'Assets pallet not available', description: 'The connected chain does not support asset transfers.', variant: 'destructive' });
+          setLoading(false);
+          return;
+        }
         try {
           const assetId = api.createType('AssetId', 1); // Assuming XOR asset ID is 1
           const value = api.createType('Balance', amount.replace(/,/g, ''));
           transferTx = api.tx.assets.transfer(assetId, recipient, value);
         } catch (e) {
           // Fallback to balances transfer if assets pallet not available
+          if (!api.tx.balances || !api.tx.balances.transfer) {
+            toast({ title: 'Balances pallet not available', description: 'The connected chain does not support balances transfers.', variant: 'destructive' });
+            setLoading(false);
+            return;
+          }
           const value = api.createType('Balance', amount.replace(/,/g, ''));
           transferTx = api.tx.balances.transfer(recipient, value);
         }

@@ -13,37 +13,37 @@ const socialLinks = [
     label: "X",
     href: "https://x.com/xorionchain?s=21",
     icon: FaTwitter,
-    description: "Official X (Twitter)"
+    description: "Updates"
   },
   {
     label: "Discord",
     href: "https://discord.gg/ucc278yJZt",
     icon: FaDiscord,
-    description: "Community chat"
+    description: "Chat"
   },
   {
     label: "Telegram",
     href: "https://t.me/Xorion_Chain",
     icon: FaTelegram,
-    description: "Community chat"
+    description: "Chat"
   },
   {
     label: "GitHub",
     href: "https://github.com/settings/admin",
     icon: FaGithub,
-    description: "Source code and issues"
+    description: "Code"
   },
   {
     label: "Reddit",
     href: "https://www.reddit.com/user/Xorion_Chain/",
     icon: FaReddit,
-    description: "Community forum"
+    description: "Forum"
   },
   {
     label: "Medium",
     href: "https://medium.com/@xorionchain",
     icon: FaMedium,
-    description: "Blog & Announcements"
+    description: "Blog"
   }
 ];
 
@@ -69,8 +69,8 @@ export default function CommunitySection() {
               Connect With Us
             </span>
             <h2 className="text-4xl md:text-5xl font-bold gradient-blue-purple bg-clip-text text-transparent mb-6 leading-tight">
-              Join Our
-              <span className="block text-primary">
+              Join Our{" "}
+              <span className="text-primary">
                 Community
               </span>
             </h2>
@@ -88,7 +88,7 @@ export default function CommunitySection() {
         </motion.div>
 
         {/* Social Links Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 max-w-4xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 max-w-5xl mx-auto">
           {socialLinks.map((social, index) => (
             <motion.div
               key={social.label}
@@ -101,7 +101,7 @@ export default function CommunitySection() {
                 type: "spring",
                 stiffness: 100
               }}
-              className="group"
+              className="group w-full"
             >
               <motion.a
                 href={social.href}
@@ -109,9 +109,9 @@ export default function CommunitySection() {
                 rel="noopener noreferrer"
                 whileHover={{ y: -8, scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="block"
+                className="block w-full h-full"
               >
-                <div className="relative bg-card rounded-2xl p-6 border border-border hover:border-primary transition-all duration-300 hover:bg-primary/5 group-hover:shadow-2xl group-hover:shadow-primary/10">
+                <div className="relative bg-card rounded-2xl p-6 border border-border hover:border-primary transition-all duration-300 hover:bg-primary/5 group-hover:shadow-2xl group-hover:shadow-primary/10 h-full flex flex-col justify-center items-center min-h-[140px]">
                   {/* Icon */}
                   <div className="flex justify-center mb-4">
                     <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center transition-all duration-300 group-hover:bg-primary">
@@ -119,11 +119,11 @@ export default function CommunitySection() {
                     </div>
                   </div>
                   {/* Content */}
-                  <div className="text-center">
-                    <h3 className="text-foreground font-semibold text-lg mb-1">
+                  <div className="text-center flex-1 flex flex-col justify-center">
+                    <h3 className="text-foreground font-semibold text-base mb-1 leading-tight">
                       {social.label}
                     </h3>
-                    <p className="text-muted-foreground text-sm group-hover:text-foreground transition-colors">
+                    <p className="text-muted-foreground text-sm group-hover:text-foreground transition-colors leading-tight">
                       {social.description}
                     </p>
                   </div>
@@ -132,8 +132,6 @@ export default function CommunitySection() {
             </motion.div>
           ))}
         </div>
-
-       
       </div>
     </section>
   );

@@ -1,118 +1,195 @@
-import { useEffect, useState, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { web3Accounts, web3Enable, web3AccountsSubscribe } from '@polkadot/extension-dapp';
+import { web3Accounts, web3Enable } from '@polkadot/extension-dapp';
 import { AirdropManager } from '../lib/AirdropManager';
-import { InjectedAccountWithMeta } from '@polkadot/extension-inject/types';
 
-export function useAirdrop() {
-  const [api, setApi] = useState<ApiPromise | null>(null);
-  const [account, setAccount] = useState<InjectedAccountWithMeta | null>(null);
-  const [airdropManager, setAirdropManager] = useState<AirdropManager | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<string>('disconnected');
-  const [error, setError] = useState<string | null>(null);
-  const mounted = useRef(true);
+export const useAirdrop = () => {
+  const [state, setState] = useState({
+    api: null,
+    accounts: [],
+    selectedAccount: null,
+    airdropManager: null,
+    stats: null,
+    eligibility: null,
+    events: [],
+    isLoading: false,
+    isConnecting: false,
+    error: null
+  });
 
-  // Effect for initialization and connection
+  const eventUnsubscribeRef = useRef(null);
+
+  // Initialize API and wallet connection
+  const connect = useCallback(async (wsUrl = 'wss://ws-proxy-latest-jds3.onrender.com') => {
+    try {
+      setState(prev => ({ ...prev, isConnecting: true, error: null }));
+
+      // Enable wallet extension
+      const extensions = await web3Enable('Airdrop DApp');
+      if (extensions.length === 0) {
+        throw new Error('No wallet extension found');
+      }
+
+      // Connect to node
+      const wsProvider = new WsProvider(wsUrl);
+      const api = await ApiPromise.create({ provider: wsProvider });
+      await api.isReady;
+
+      // Get accounts
+      const accounts = await web3Accounts();
+      if (accounts.length === 0) {
+        throw new Error('No accounts found in wallet');
+      }
+
+      setState(prev => ({
+        ...prev,
+        api,
+        accounts,
+        selectedAccount: accounts[0], // Auto-select first account
+        isConnecting: false
+      }));
+
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        isConnecting: false,
+        error: error instanceof Error ? error.message : 'Connection failed'
+      }));
+    }
+  }, []);
+
+  // Select an account
+  const selectAccount = useCallback((account) => {
+    setState(prev => ({ ...prev, selectedAccount: account }));
+  }, []);
+
+  // Create airdrop manager when API and account are ready
   useEffect(() => {
-    mounted.current = true;
-    
-    const initializeConnection = async () => {
-      try {
-        setConnectionStatus('connecting');
-        setError(null);
+    if (state.api && state.selectedAccount) {
+      const manager = new AirdropManager(state.api, state.selectedAccount);
+      setState(prev => ({ ...prev, airdropManager: manager }));
+    }
+  }, [state.api, state.selectedAccount]);
 
-        const extensions = await web3Enable('Airdrop DApp');
-        if (extensions.length === 0) {
-          throw new Error('No wallet extension found. Please install Polkadot.js extension.');
+  // Subscribe to events when airdrop manager is ready
+  useEffect(() => {
+    if (state.airdropManager) {
+      const subscribeToEvents = async () => {
+        try {
+          const unsubscribe = await state.airdropManager.subscribeToEvents((event) => {
+            setState(prev => ({
+              ...prev,
+              events: [event, ...prev.events.slice(0, 9)] // Keep last 10 events
+            }));
+          });
+          eventUnsubscribeRef.current = unsubscribe;
+        } catch (error) {
+          console.error('Failed to subscribe to events:', error);
         }
+      };
 
-        const wsProvider = new WsProvider('wss://ws-proxy-latest-jds3.onrender.com');
-        wsProvider.on('connected', () => console.log('WebSocket connected'));
-        wsProvider.on('disconnected', () => {
-          if (mounted.current) setConnectionStatus('disconnected');
-        });
-        wsProvider.on('error', (err) => {
-          console.error('WebSocket error:', err);
-          if (mounted.current) setError('WebSocket connection error');
-        });
+      subscribeToEvents();
 
-        const apiInstance = await ApiPromise.create({ provider: wsProvider });
-        await apiInstance.isReady;
-        
-        if (!mounted.current) {
-          apiInstance.disconnect();
-          return;
+      // Cleanup on unmount or when manager changes
+      return () => {
+        if (eventUnsubscribeRef.current) {
+          eventUnsubscribeRef.current();
+          eventUnsubscribeRef.current = null;
         }
+      };
+    }
+  }, [state.airdropManager]);
 
-        console.log('API is ready');
-        setApi(apiInstance);
-        setConnectionStatus('connected');
-        
-        const accounts = await web3Accounts();
-        if (accounts.length > 0) {
-          setAccount(accounts[0]);
-          setAirdropManager(new AirdropManager(apiInstance, accounts[0]));
-        } else {
-          setError('No accounts found. Please create an account in your wallet.');
-        }
-      } catch (err) {
-        console.error('Initialization error:', err);
-        if (mounted.current) {
-          setError(err.message || 'Failed to initialize connection');
-          setConnectionStatus('error');
-        }
+  // Refresh airdrop statistics
+  const refreshStats = useCallback(async () => {
+    if (!state.airdropManager) return;
+
+    try {
+      setState(prev => ({ ...prev, isLoading: true, error: null }));
+      const stats = await state.airdropManager.getAirdropStats();
+      setState(prev => ({ ...prev, stats, isLoading: false }));
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Failed to get stats'
+      }));
+    }
+  }, [state.airdropManager]);
+
+  // Check eligibility
+  const checkEligibility = useCallback(async () => {
+    if (!state.airdropManager) return;
+
+    try {
+      setState(prev => ({ ...prev, isLoading: true, error: null }));
+      const eligibility = await state.airdropManager.checkEligibility();
+      setState(prev => ({ ...prev, eligibility, isLoading: false }));
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Failed to check eligibility'
+      }));
+    }
+  }, [state.airdropManager]);
+
+  // Claim airdrop
+  const claimAirdrop = useCallback(async () => {
+    if (!state.airdropManager || !state.eligibility?.eligible) {
+      setState(prev => ({ ...prev, error: 'Not eligible to claim airdrop' }));
+      return;
+    }
+
+    try {
+      setState(prev => ({ ...prev, isLoading: true, error: null }));
+      await state.airdropManager.claimAirdrop();
+      
+      // Refresh stats and eligibility after claiming
+      await Promise.all([refreshStats(), checkEligibility()]);
+      
+      setState(prev => ({ ...prev, isLoading: false }));
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Failed to claim airdrop'
+      }));
+    }
+  }, [state.airdropManager, state.eligibility, refreshStats, checkEligibility]);
+
+  // Clear error
+  const clearError = useCallback(() => {
+    setState(prev => ({ ...prev, error: null }));
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (eventUnsubscribeRef.current) {
+        eventUnsubscribeRef.current();
+      }
+      if (state.api) {
+        state.api.disconnect();
       }
     };
+  }, []);
 
-    initializeConnection();
-
-    return () => {
-      mounted.current = false;
-      api?.disconnect();
-    };
-  }, []); // Runs only once on mount
-
-  // Effect to handle account changes
+  // Auto-refresh stats when manager is ready
   useEffect(() => {
-    if (!api || connectionStatus !== 'connected') return;
+    if (state.airdropManager) {
+      refreshStats();
+      checkEligibility();
+    }
+  }, [state.airdropManager, refreshStats, checkEligibility]);
 
-    const subscribeToAccounts = async () => {
-      const unsubscribe = await web3AccountsSubscribe((injectedAccounts) => {
-        if (!mounted.current) return;
-        
-        console.log('Accounts changed:', injectedAccounts);
-        const currentAccount = injectedAccounts.length > 0 ? injectedAccounts[0] : null;
-        
-        setAccount((prevAccount) => {
-          if (prevAccount?.address !== currentAccount?.address) {
-            setAirdropManager(currentAccount ? new AirdropManager(api, currentAccount) : null);
-            return currentAccount;
-          }
-          return prevAccount;
-        });
-        
-        if (injectedAccounts.length === 0) {
-            setError('No accounts found. Please select an account in your wallet.');
-        } else {
-            setError(null);
-        }
-      });
-      return unsubscribe;
-    };
-    
-    const unsubPromise = subscribeToAccounts();
-    
-    return () => {
-      unsubPromise.then(unsub => unsub && unsub());
-    };
-  }, [api, connectionStatus]);
-
-  return { 
-    api, 
-    account, 
-    airdropManager, 
-    connectionStatus, 
-    error,
-    isConnected: connectionStatus === 'connected' && !!api && !!account
+  return {
+    ...state,
+    connect,
+    selectAccount,
+    refreshStats,
+    checkEligibility,
+    claimAirdrop,
+    clearError
   };
-}
+};

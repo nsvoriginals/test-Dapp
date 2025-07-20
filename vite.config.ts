@@ -7,7 +7,7 @@ import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfil
 // https://vitejs.dev/config/
 export default defineConfig(() => ({
   server: {
-    host: "::",
+    host: "0.0.0.0",
     port: 3000,
   },
   plugins: [
@@ -16,7 +16,9 @@ export default defineConfig(() => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      
+      'stream': 'stream-browserify',
+      'buffer': 'buffer',
+      'crypto': 'crypto-browserify',
     },
   },
   optimizeDeps: {

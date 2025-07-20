@@ -1,202 +1,212 @@
-import { ApiPromise } from '@polkadot/api';
 import { web3FromAddress } from '@polkadot/extension-dapp';
-import { InjectedAccountWithMeta } from '@polkadot/extension-inject/types';
-import { Codec } from '@polkadot/types/types';
-import BN from 'bn.js';
-
-// Define a type for the stats object for clarity
-interface AirdropStats {
-  totalAirdrops: string | number;
-  airdropsThisBlock: string | number;
-  airdropAmount: string | number | Codec;
-  maxPerBlock: string | number | Codec;
-  cooldownPeriod: string | number | Codec;
-}
-
-// Define a type for the eligibility object
-interface Eligibility {
-  eligible: boolean;
-  claimed: boolean;
-  error?: string;
-}
 
 export class AirdropManager {
-  // Use the specific InjectedAccountWithMeta type instead of any
-  public api: ApiPromise;
-  public account: InjectedAccountWithMeta;
-
-  constructor(api: ApiPromise, account: InjectedAccountWithMeta) {
+  constructor(api, account) {
     this.api = api;
     this.account = account;
-    console.log('AirdropManager initialized with:', {
-      api: !!api,
-      account: account?.address,
-    });
   }
 
-  public async getAirdropStats(): Promise<AirdropStats> {
+  async getAirdropStats() {
     try {
-      console.log('Fetching airdrop stats...');
-      await this.api.isReady;
-
-      if (!this.api.query.airdrop || !this.api.consts.airdrop) {
-        console.error('Airdrop pallet not found in API');
-        return this.getFallbackStats();
+      // Check if API is connected before making queries
+      if (!this.api.isConnected) {
+        throw new Error('API is not connected');
       }
 
-      const [totalAirdrops, airdropsThisBlock] = await Promise.all([
+      const [totalAirdrops, airdropsThisBlock, airdropAmount, maxPerBlock, cooldownPeriod] = await Promise.all([
         this.api.query.airdrop.totalAirdrops(),
         this.api.query.airdrop.airdropsThisBlock(),
+        this.api.consts.airdrop.airdropAmount,
+        this.api.consts.airdrop.maxAirdropsPerBlock,
+        this.api.consts.airdrop.cooldownPeriod
       ]);
-
-      const stats: AirdropStats = {
-        totalAirdrops: totalAirdrops.toHuman(),
-        airdropsThisBlock: airdropsThisBlock.toHuman(),
-        airdropAmount: this.api.consts.airdrop.airdropAmount.toHuman(),
-        maxPerBlock: this.api.consts.airdrop.maxAirdropsPerBlock.toHuman(),
-        cooldownPeriod: this.api.consts.airdrop.cooldownPeriod.toHuman(),
+      
+      return {
+        totalAirdrops: totalAirdrops.toString(),
+        airdropsThisBlock: airdropsThisBlock.toString(),
+        airdropAmount: airdropAmount.toString(),
+        maxPerBlock: maxPerBlock.toString(),
+        cooldownPeriod: cooldownPeriod.toString()
       };
-
-      console.log('Airdrop stats retrieved:', stats);
-      return stats;
     } catch (error) {
       console.error('Error getting stats:', error);
-      return this.getFallbackStats();
+      return null;
     }
   }
 
-  public getFallbackStats(): AirdropStats {
-    return {
-      totalAirdrops: '0',
-      airdropsThisBlock: '0',
-      airdropAmount: '1000000000000000000000', // 1000 XOR fallback
-      maxPerBlock: '10',
-      cooldownPeriod: '100',
-    };
+  async checkEligibility() {
+    try {
+      if (!this.api.isConnected) {
+        return { eligible: false, reason: 'API is not connected' };
+      }
+
+      // Get account info
+      const accountInfo = await this.api.query.system.account(this.account.address);
+      const userFree = accountInfo.data.free.toBn();
+      
+      // Check if user has minimum balance (example: 1 token)
+      const minBalance = this.api.createType('Balance', '1000000000000'); // 1 token with 12 decimals
+      
+      if (userFree.lt(minBalance)) {
+        return { 
+          eligible: false, 
+          reason: 'Insufficient balance. Minimum 1 XOR required.' 
+        };
+      }
+
+      // Check if already claimed (if your pallet tracks this)
+      try {
+        const claimedStatus = await this.api.query.airdrop.claimedAccounts(this.account.address);
+        if (claimedStatus.isSome) {
+          return { 
+            eligible: false, 
+            claimed: true,
+            reason: 'Airdrop already claimed' 
+          };
+        }
+      } catch (e) {
+        // If claimedAccounts doesn't exist, continue
+        console.log('No claimed accounts tracking available');
+      }
+
+      // Check cooldown period
+      try {
+        const lastClaim = await this.api.query.airdrop.lastClaimBlock(this.account.address);
+        const currentBlock = await this.api.query.system.number();
+        const cooldownPeriod = this.api.consts.airdrop.cooldownPeriod;
+        
+        if (lastClaim.isSome) {
+          const blocksSinceLastClaim = currentBlock.toBn().sub(lastClaim.unwrap().toBn());
+          if (blocksSinceLastClaim.lt(cooldownPeriod.toBn())) {
+            return { 
+              eligible: false, 
+              reason: `Cooldown period active. ${cooldownPeriod.toBn().sub(blocksSinceLastClaim).toString()} blocks remaining.` 
+            };
+          }
+        }
+      } catch (e) {
+        // If cooldown tracking doesn't exist, continue
+        console.log('No cooldown tracking available');
+      }
+
+      return { eligible: true };
+      
+    } catch (error) {
+      console.error('Error checking eligibility:', error);
+      return { 
+        eligible: false, 
+        reason: `Eligibility check failed: ${error.message}` 
+      };
+    }
   }
 
-  public async claimAirdrop(): Promise<() => void> {
-    if (!this.account?.address) {
-      throw new Error('No account connected');
-    }
-    if (!this.api.tx.airdrop?.claimAirdrop) {
-      throw new Error('Claim function is not available on the network.');
-    }
+  async claimAirdrop() {
+    try {
+      if (!this.api.isConnected) {
+        throw new Error('API is not connected');
+      }
 
-    console.log('Claiming airdrop for:', this.account.address);
-    const injector = await web3FromAddress(this.account.address);
+      const injector = await web3FromAddress(this.account.address);
+      
+      return new Promise((resolve, reject) => {
+        this.api.tx.airdrop
+          .claimAirdrop()
+          .signAndSend(this.account.address, { signer: injector.signer }, (result) => {
+            console.log('Transaction status:', result.status.type);
+            
+            if (result.status.isInBlock) {
+              console.log('Transaction in block:', result.status.asInBlock.toHex());
+              
+              // Debug: Log all events to see what we're getting
+              console.log('All transaction events:', result.events.map(({ event }) => ({
+                section: event.section,
+                method: event.method,
+                data: event.data.toHuman()
+              })));
+              
+              let claimSuccess = false;
+              let transactionFailed = false;
+              
+              result.events.forEach(({ event }) => {
+                console.log(`Event: ${event.section}.${event.method}`, event.data.toHuman());
+                
+                if (event.section === 'airdrop' && event.method === 'AirdropClaimed') {
+                  console.log('Airdrop claimed successfully!');
+                  claimSuccess = true;
+                } else if (event.section === 'system' && event.method === 'ExtrinsicFailed') {
+                  console.error('Transaction failed:', event.data.toHuman());
+                  transactionFailed = true;
+                } else if (event.section === 'system' && event.method === 'ExtrinsicSuccess') {
+                  console.log('Extrinsic executed successfully');
+                }
+              });
+              
+              if (transactionFailed) {
+                reject(new Error('Transaction failed'));
+              } else if (claimSuccess) {
+                resolve();
+              }
+              // If no specific airdrop event but extrinsic succeeded, still resolve
+              else if (!transactionFailed) {
+                console.log('Transaction completed without specific airdrop event');
+                resolve();
+              }
+              
+            } else if (result.status.isFinalized) {
+              console.log('Transaction finalized');
+              // Only resolve here if we haven't already resolved in isInBlock
+              if (!result.events.some(({ event }) => event.section === 'system' && event.method === 'ExtrinsicFailed')) {
+                resolve();
+              }
+            } else if (result.isError) {
+              reject(new Error('Transaction failed'));
+            }
+          })
+          .catch(reject);
+      });
+    } catch (error) {
+      console.error('Error claiming airdrop:', error);
+      throw error;
+    }
+  }
 
-    // Explicitly type the result of signAndSend
-    const unsub = await this.api.tx.airdrop
-      .claimAirdrop()
-      .signAndSend(this.account.address, { signer: injector.signer }, (result) => {
-        console.log('Transaction status:', result.status.type);
-        if (result.status.isInBlock) {
-          console.log(`Transaction included in block: ${result.status.asInBlock.toHex()}`);
-          result.events.forEach(({ event: { data, method, section } }) => {
-            console.log(`Event: ${section}.${method}`, data.toHuman());
-            if (section === 'airdrop' && method === 'AirdropClaimed') {
-              console.log('Airdrop claimed successfully!', data.toHuman());
+  // Add the missing subscribeToEvents method
+  subscribeToEvents(callback) {
+    return new Promise((resolve, reject) => {
+      try {
+        const unsubscribe = this.api.query.system.events((events) => {
+          events.forEach((record) => {
+            const { event } = record;
+            if (event.section === 'airdrop') {
+              callback({
+                method: event.method,
+                data: event.data.toHuman()
+              });
             }
           });
-        } else if (result.status.isFinalized) {
-          console.log('Transaction finalized');
-          unsub();
-        }
-      });
-    return unsub;
-  }
-
-  public async checkEligibility(): Promise<Eligibility> {
-    try {
-  if (!this.account?.address) {
-    return { eligible: false, claimed: false, error: 'No account' };
-  }
-
-  // Step 1: Check XOR balance
-  const { data: { free } } = await this.api.query.system.account(this.account.address);
-  const hasXOR = free.gt(new BN(0));
-
-  if (!hasXOR) {
-    console.log('User has no XOR tokens');
-    return { eligible: false, claimed: false, error: 'User has no XOR tokens' };
-  }
-
-  console.log('User has XOR tokens');
-
-  // Step 2: Check if RPC method exists
-  if (!this.api.rpc.airdrop?.isEligibleForAirdrop) {
-    console.error('RPC airdrop.isEligibleForAirdrop not found');
-    return { eligible: false, claimed: false, error: 'Eligibility check unavailable.' };
-  }
-
-  // Step 3: Check eligibility
-  const isEligible = await this.api.rpc.airdrop.isEligibleForAirdrop(this.account.address);
-  const eligible = isEligible.isTrue || false;
-
-  console.log('Eligibility check result:', { eligible });
-  return { eligible, claimed: false };
-
-} catch (e: unknown) {
-  console.error('Error checking eligibility:', e);
-  return { eligible: false, claimed: false, error: (e as Error).message };
-}
-  }
-
-  public async getRemainingXor(): Promise<string> {
-    try {
-      if (!this.account?.address) return '0';
-      if (!this.api.rpc.airdrop?.getAirdropPoolBalance) {
-        console.error('RPC airdrop.getAirdropPoolBalance not found');
-        return '0';
+        });
+        
+        resolve(unsubscribe);
+      } catch (error) {
+        reject(error);
       }
-
-      const poolBalance = await this.api.rpc.airdrop.getAirdropPoolBalance(this.account.address);
-      return poolBalance ? poolBalance.toString() : '0';
-    } catch (e) {
-      console.error('Error getting remaining balance via RPC:', e);
-      return '0';
-    }
-  }
-  
-  public async getTotalXorAllocated(): Promise<bigint> {
-    // This can be a hardcoded value or fetched from a constant if available
-    return BigInt(1_000_000 * 1e18);
-  }
-
-  public async getMaxPerAccount(): Promise<string> {
-    try {
-      if (!this.api.consts.airdrop?.maxAirdropsPerAccount || !this.api.consts.airdrop?.airdropAmount) {
-        console.warn('Airdrop constants for max per account not found, using fallback');
-        return '10000000000000000000000'; // 10,000 XOR fallback
-      }
-
-      const maxPer = this.api.consts.airdrop.maxAirdropsPerAccount;
-      const airdropAmount = this.api.consts.airdrop.airdropAmount;
-
-      const maxPerBN = new BN(maxPer.toString());
-      const airdropAmountBN = new BN(airdropAmount.toString());
-      
-      return maxPerBN.mul(airdropAmountBN).toString();
-    } catch (e) {
-      console.error('Error getting max per account:', e);
-      return '10000000000000000000000'; // 10,000 XOR fallback
-    }
-  }
-
-  public subscribeToEvents(callback: (event: any) => void): Promise<() => void> {
-    console.log('Subscribing to airdrop events');
-    return this.api.query.system.events((events) => {
-      events.forEach((record) => {
-        const { event } = record;
-        if (event.section === 'airdrop') {
-          console.log('Airdrop event detected:', event.method, event.data.toHuman());
-          callback({
-            method: event.method,
-            data: event.data.toHuman()
-          });
-        }
-      });
     });
+  }
+
+  // Add connection status check method
+  isConnected() {
+    return this.api.isConnected;
+  }
+
+  // Add reconnection method
+  async reconnect() {
+    try {
+      if (!this.api.isConnected) {
+        await this.api.connect();
+      }
+    } catch (error) {
+      console.error('Failed to reconnect:', error);
+      throw error;
+    }
   }
 }

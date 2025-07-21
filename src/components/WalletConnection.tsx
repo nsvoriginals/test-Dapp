@@ -204,7 +204,7 @@ const WalletConnection = () => {
                   <Button
                     key={wallet.name}
                     variant="outline"
-                    className="w-full flex items-center justify-start gap-3 mb-2"
+                    className="w-full flex text-white items-center justify-start gap-3 mb-2"
                     onClick={() => handleWalletSelect(wallet)}
                   >
                     {WALLET_ICONS[wallet.name] || WALLET_ICONS['default']}
@@ -223,7 +223,7 @@ const WalletConnection = () => {
                     <Button
                       key={wallet.name}
                       variant="outline"
-                      className="w-full flex items-center justify-start gap-3 mb-2 opacity-60 cursor-not-allowed"
+                      className="w-full text-white flex items-center justify-start gap-3 mb-2 opacity-60 cursor-not-allowed"
                       disabled
                     >
                       {WALLET_ICONS[wallet.name] || WALLET_ICONS['default']}

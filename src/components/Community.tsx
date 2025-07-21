@@ -7,6 +7,7 @@ import {
   FaReddit,
   FaMedium 
 } from "react-icons/fa";
+import { SiLinktree } from "react-icons/si";
 
 const socialLinks = [
   {
@@ -17,7 +18,7 @@ const socialLinks = [
   },
   {
     label: "Discord",
-    href: "https://discord.gg/ucc278yJZt",
+    href: "https://discord.gg/c4VVaRVdKq",
     icon: FaDiscord,
     description: "Chat"
   },
@@ -44,6 +45,12 @@ const socialLinks = [
     href: "https://medium.com/@xorionchain",
     icon: FaMedium,
     description: "Blog"
+  },
+  {
+    label: "Linktree",
+    href: "https://linktr.ee/xorionchain?utm_source=linktree_profile_share&ltsid=346e858e-813c-490d-a4cd-a212ce016e04",
+    icon: SiLinktree,
+    description: "All Socials"
   }
 ];
 
@@ -88,7 +95,7 @@ export default function CommunitySection() {
         </motion.div>
 
         {/* Social Links Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-6 max-w-5xl mx-auto">
           {socialLinks.map((social, index) => (
             <motion.div
               key={social.label}

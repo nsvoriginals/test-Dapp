@@ -28,7 +28,7 @@ const NetworkStatsHeader: React.FC<NetworkStatsHeaderProps> = ({
           Updated: {new Date(lastUpdated).toLocaleTimeString()}
         </span>
       )}
-      <Button onClick={onRefresh} size="sm" variant="outline" disabled={isFetching}>
+      <Button className='text-white' onClick={onRefresh} size="sm" variant="outline" disabled={isFetching}>
         {isFetching ? 'Refreshing...' : 'Refresh'}
       </Button>
     </div>

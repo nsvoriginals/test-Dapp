@@ -167,21 +167,21 @@ const WalletConnection = () => {
       <Button
         onClick={() => setModalOpen(true)}
         variant="outline"
-        className="flex items-center space-x-2 bg-blue-300 hover:bg-blue-500 text-black"
+        className="flex items-center space-x-2 bg-blue-300 hover:bg-blue-500 text-white"
         disabled={apiState.status !== 'connected'}
       >
         <FaWallet className="w-4 h-4" />
         <span>{selectedAccount ? formatShort(selectedAccount.address) : 'Connect Wallet'}</span>
       </Button>
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md text-white">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-white">
               {step === 'wallets' && 'Connect a Wallet'}
               {step === 'accounts' && 'Select Account'}
               {step === 'summary' && 'Wallet Connected'}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-white">
               {step === 'wallets' && 'Choose a wallet extension to connect.'}
               {step === 'accounts' && selectedWallet && `Select an account from ${selectedWallet.title || selectedWallet.name}.`}
               {step === 'summary' && 'You are connected. You can switch account or disconnect.'}
@@ -284,11 +284,11 @@ const WalletConnection = () => {
               </div>
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Wallet</div>
-                <div className="text-foreground capitalize">{(selectedAccount.meta.source || '').replace('-', ' ')}</div>
+                <div className="text-white capitalize">{(selectedAccount.meta.source || '').replace('-', ' ')}</div>
               </div>
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Network</div>
-                <div className="text-foreground">{getNetworkName()}</div>
+                <div className="text-white">{getNetworkName()}</div>
               </div>
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Address</div>
@@ -302,7 +302,7 @@ const WalletConnection = () => {
               {balance && (
                 <div>
                   <div className="text-sm text-muted-foreground mb-1">Balance</div>
-                  <div className="text-lg font-bold text-foreground">
+                  <div className="text-lg font-bold text-white">
                     {(Number(balance) / 1e18).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 8 })} tXOR
                   </div>
                 </div>

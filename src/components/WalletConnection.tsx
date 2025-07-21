@@ -280,7 +280,7 @@ const WalletConnection = () => {
               <div className="flex items-center gap-2">
                 {WALLET_ICONS[selectedWallet?.name] || WALLET_ICONS['default']}
                 <span className="font-medium">{selectedAccount.meta.name || selectedAccount.meta.source}</span>
-                <Badge className="bg-primary text-primary-foreground border-primary/30 ml-2">Connected</Badge>
+                <Badge className="bg-primary text-white border-primary/30 ml-2">Connected</Badge>
               </div>
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Wallet</div>

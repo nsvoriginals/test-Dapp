@@ -13,7 +13,7 @@ const DelegationDistributionChart = ({ stakingDistribution, CustomTooltip }: Del
   <Card>
     <CardHeader>
       <CardTitle className="flex items-center space-x-2">
-        <FaChartLine className="w-5 h-5 text-primary" />
+        <FaChartLine className="w-5 h-5 text-white" />
         <span>Delegation Distribution</span>
       </CardTitle>
     </CardHeader>

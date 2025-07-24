@@ -12,6 +12,8 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { formatBalance } from '@polkadot/util';
 import { cn } from '@/lib/utils';
 import BN from 'bn.js';
+import { useWallet } from './WalletConnection';
+import { usePolkadotStore } from '@/stores/polkadotStore';
 
 const XORION_CHAIN_CONFIG = {
   name: 'XOR',            // Changed from 'Xorion Chain'
@@ -55,16 +57,10 @@ function formatToken(amount: string | BN | number, decimals = 18, unit = 'tXOR',
 
 const TransferFunds = () => {
   const { toast } = useToast();
-  
-  // Connection state
-  const [api, setApi] = useState<ApiPromise | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected');
-  const [chainInfo, setChainInfo] = useState<ChainInfo | null>(null);
+  const { selectedAccount } = useWallet();
+  const { api, apiState } = usePolkadotStore();
   
   // Account state
-  const [accounts, setAccounts] = useState<InjectedAccountWithMeta[]>([]);
-  const [selectedAccount, setSelectedAccount] = useState<InjectedAccountWithMeta | null>(null);
   const [balance, setBalance] = useState<string>('0');
   const [transferableBalance, setTransferableBalance] = useState<string>('0');
   const [lockedBalance, setLockedBalance] = useState<string>('0');
@@ -76,96 +72,12 @@ const TransferFunds = () => {
   const [transferHistory, setTransferHistory] = useState<TransferHistoryItem[]>([]);
   const [transferType, setTransferType] = useState<'transferKeepAlive' | 'transferAllowDeath'>('transferKeepAlive');
 
-  // Initialize API connection
-  useEffect(() => {
-    const connectToXorion = async () => {
-      try {
-        setConnectionStatus('connecting');
-        const wsProvider = new WsProvider(XORION_CHAIN_CONFIG.endpoint);
-        
-        const apiInstance = await ApiPromise.create({ 
-          provider: wsProvider,
-          types: {} // Add custom types if needed
-        });
-        
-        await apiInstance.isReady;
-        
-        const [chain, nodeName, nodeVersion, runtimeVersion] = await Promise.all([
-          apiInstance.rpc.system.chain(),
-          apiInstance.rpc.system.name(),
-          apiInstance.rpc.system.version(),
-          apiInstance.rpc.state.getRuntimeVersion()
-        ]);
-        
-        const chainInfo: ChainInfo = {
-          chain: chain.toString(),
-          nodeName: nodeName.toString(),
-          nodeVersion: nodeVersion.toString(),
-          specVersion: runtimeVersion.specVersion.toNumber(),
-          implVersion: runtimeVersion.implVersion.toNumber()
-        };
-        
-        setApi(apiInstance);
-        setChainInfo(chainInfo);
-        setIsConnected(true);
-        setConnectionStatus('connected');
-        
-        toast({ 
-          title: 'Connected to Xorion', 
-          description: `Connected to ${chainInfo.chain} v${chainInfo.specVersion}` 
-        });
-        
-      } catch (error) {
-        console.error('Failed to connect to Xorion chain:', error);
-        setConnectionStatus('error');
-        toast({ 
-          title: 'Connection Error', 
-          description: 'Failed to connect to Xorion chain',
-          variant: 'destructive'
-        });
-      }
-    };
-
-    connectToXorion();
-
-    return () => {
-      if (api) {
-        api.disconnect();
-      }
-    };
-  }, []);
-
-  // Load wallet accounts
-  useEffect(() => {
-    const loadAccounts = async () => {
-      try {
-        await web3Enable('xorion-transfer-app');
-        const allAccounts = await web3Accounts();
-        setAccounts(allAccounts);
-        if (allAccounts.length > 0) {
-          setSelectedAccount(allAccounts[0]);
-        }
-      } catch (error) {
-        console.error('Error loading accounts:', error);
-        toast({
-          title: 'Wallet Error',
-          description: 'Failed to load wallet accounts. Please install Polkadot.js extension.',
-          variant: 'destructive'
-        });
-      }
-    };
-
-    loadAccounts();
-  }, []);
-
-  // Fetch account balance
+  // Only fetch balance if selectedAccount changes and api is connected
   useEffect(() => {
     const fetchAccountInfo = async () => {
-      if (!api || !selectedAccount || !isConnected) return;
-
+      if (!api || apiState.status !== 'connected' || !selectedAccount) return;
       try {
-        const { data: { free, reserved, frozen } } = await api.query.system.account(selectedAccount.address);
-        
+        const { data: { free, reserved, frozen } } = await api.query.system.account(selectedAccount.address) as any;
         let stakingLocked = new BN(0);
         try {
           const stakingLedger = await api.query.staking.ledger(selectedAccount.address);
@@ -176,30 +88,21 @@ const TransferFunds = () => {
         } catch (e) {
           // Account not staking
         }
-        
         setBalance(free.toString());
         const totalLocked = BN.max(frozen, reserved, stakingLocked);
         setLockedBalance(totalLocked.toString());
-        
-        // Calculate transferable balance properly
-        // For transferKeepAlive: free - locked - existential_deposit
-        // For transferAllowDeath: free - locked
         const transferableKeepAlive = free.sub(totalLocked).sub(XORION_CHAIN_CONFIG.existentialDeposit);
         setTransferableBalance(transferableKeepAlive.isNeg() ? '0' : transferableKeepAlive.toString());
-        
       } catch (error) {
-        console.error('Error fetching account info:', error);
         setBalance('0');
         setTransferableBalance('0');
         setLockedBalance('0');
       }
     };
-
     fetchAccountInfo();
     const interval = setInterval(fetchAccountInfo, 12000);
     return () => clearInterval(interval);
-    
-  }, [api, selectedAccount, isConnected]);
+  }, [api, apiState.status, selectedAccount]);
 
   // Validate address
   const validateAddress = (address: string): boolean => {
@@ -321,7 +224,7 @@ const TransferFunds = () => {
 
   // Handle transfer
   const handleTransfer = async () => {
-    if (!api || !selectedAccount || !isConnected) {
+    if (!api || apiState.status !== 'connected' || !selectedAccount) {
       toast({ title: 'Not Connected', description: 'Please ensure wallet and chain are connected', variant: 'destructive' });
       return;
     }
@@ -500,23 +403,23 @@ const TransferFunds = () => {
   };
 
   // Loading state
-  if (connectionStatus !== 'connected') {
+  if (apiState.status !== 'connected') {
     return (
       <div className="min-h-screen bg-card p-4 flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="p-6 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
             <h3 className="text-lg font-semibold mb-2">
-              {connectionStatus === 'connecting' ? 'Connecting to Xorion' : 
-               connectionStatus === 'error' ? 'Connection Failed' : 'Initializing...'}
+              {apiState.status === 'connecting' ? 'Connecting to Xorion' : 
+               apiState.status === 'error' ? 'Connection Failed' : 'Initializing...'}
             </h3>
             <p className="text-muted-foreground mb-4">
-              {connectionStatus === 'connecting' ? 'Establishing connection to Xorion chain...' :
-               connectionStatus === 'error' ? 'Failed to connect to the Xorion blockchain' :
+              {apiState.status === 'connecting' ? 'Establishing connection to Xorion chain...' :
+               apiState.status === 'error' ? 'Failed to connect to the Xorion blockchain' :
                'Please wait...'}
             </p>
             <div className="text-xs text-muted-foreground">
-              Endpoint: {XORION_CHAIN_CONFIG.endpoint}
+              Endpoint: {apiState.endpoint || XORION_CHAIN_CONFIG.endpoint}
             </div>
           </CardContent>
         </Card>
@@ -537,11 +440,11 @@ const TransferFunds = () => {
         </div>
         <div className="flex items-center space-x-2">
           <Badge variant="outline" className="text-xs">
-            {isConnected ? 'Connected' : 'Disconnected'}
+            {apiState.status === 'connected' ? 'Connected' : 'Disconnected'}
           </Badge>
-          {chainInfo && (
+          {apiState.chainInfo && (
             <Badge className="bg-blue-500 text-white">
-              v{chainInfo.specVersion}
+              v{apiState.chainInfo.specVersion}
             </Badge>
           )}
           {selectedAccount && (
@@ -566,32 +469,13 @@ const TransferFunds = () => {
               {/* Account Selection */}
               <div>
                 <label className="text-sm font-medium text-white mb-2 block">From Account</label>
-                <Select 
-                  value={selectedAccount?.address || ''} 
-                  onValueChange={(address) => {
-                    const account = accounts.find(acc => acc.address === address);
-                    setSelectedAccount(account || null);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an account" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map((account) => (
-                      <SelectItem key={account.address} value={account.address}>
-                        <div className="flex flex-col">
-                          <div className="font-medium">
-                            {account.meta.name || formatAddress(account.address)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {formatAddress(account.address)}
-                          </div>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
+                {selectedAccount ? (
+                  <h1 className="text-lg font-bold text-primary mb-2">
+                    {selectedAccount.meta.name || `${selectedAccount.address.slice(0, 8)}...${selectedAccount.address.slice(-6)}`}
+                  </h1>
+                ) : (
+                  <h1 className="text-lg font-bold text-red-500 mb-2">No account selected</h1>
+                )}
                 {selectedAccount && (
                   <div className="mt-3 p-4 bg-muted/20 rounded-lg space-y-2 text-sm">
                     <div className="flex justify-between text-white">
@@ -794,11 +678,11 @@ const TransferFunds = () => {
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-white">Chain:</span>
-                <span className="font-medium text-white">{chainInfo?.chain || 'Xorion'}</span>
+                <span className="font-medium text-white">{apiState.chainInfo?.chain || 'Xorion'}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-white">Runtime:</span>
-                <span className="font-medium text-white">v{chainInfo?.specVersion || XORION_CHAIN_CONFIG.runtimeVersion}</span>
+                <span className="font-medium text-white">v{apiState.chainInfo?.specVersion || XORION_CHAIN_CONFIG.runtimeVersion}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-white">Token:</span>
@@ -806,8 +690,8 @@ const TransferFunds = () => {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-white">Status:</span>
-                <Badge className={isConnected ? "bg-green-500/20 text-green-500 border-green-500/30" : "bg-red-500/20 text-red-500 border-red-500/30"}>
-                  {isConnected ? 'Connected' : 'Disconnected'}
+                <Badge className={apiState.status === 'connected' ? "bg-green-500/20 text-green-500 border-green-500/30" : "bg-red-500/20 text-red-500 border-red-500/30"}>
+                  {apiState.status === 'connected' ? 'Connected' : 'Disconnected'}
                 </Badge>
               </div>
               <div className="flex justify-between text-sm">

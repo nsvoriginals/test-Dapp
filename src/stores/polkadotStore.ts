@@ -548,6 +548,32 @@ export const usePolkadotStore = create<PolkadotStore>()(
     clearCache: () => {
       set({ cache: new Map() });
     },
+  // Add this to your store actions
+verifyChainConnection: async () => {
+  const { api } = get();
+  if (!api) return;
+  
+  try {
+    const [chainName, chainType, nodeVersion] = await Promise.all([
+      api.rpc.system.chain(),
+      api.rpc.system.chainType(),
+      api.rpc.system.version()
+    ]);
+    
+    console.log('🔍 Connected Chain Info:');
+    console.log('Chain Name:', chainName.toString());
+    console.log('Chain Type:', chainType.toString());
+    console.log('Node Version:', nodeVersion.toString());
+    
+    return {
+      chainName: chainName.toString(),
+      chainType: chainType.toString(),
+      nodeVersion: nodeVersion.toString()
+    };
+  } catch (error) {
+    console.error('Error verifying chain:', error);
+  }
+},
 
     setNetworkData: (data: any) => set({ networkData: data }),
     clearNetworkData: () => set({ networkData: null }),

@@ -3,6 +3,7 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { web3Accounts, web3Enable, web3FromAddress } from '@polkadot/extension-dapp';
 import { FiDroplet, FiRefreshCw, FiInfo, FiZap, FiCopy, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import { MdAccountBalanceWallet } from 'react-icons/md';
+import { useWallet } from './WalletConnection';
 
 class AirdropManager {
   api;
@@ -52,8 +53,6 @@ class AirdropManager {
 
 export default function AirdropPanel() {
   const [api, setApi] = useState(null);
-  const [accounts, setAccounts] = useState([]);
-  const [selectedAccount, setSelectedAccount] = useState(null);
   const [manager, setManager] = useState(null);
   const [stats, setStats] = useState(null);
   const [events, setEvents] = useState([]);
@@ -63,31 +62,31 @@ export default function AirdropPanel() {
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const wsUrl = 'wss://ws-proxy-latest-jds3.onrender.com';
+  const { selectedAccount } = useWallet();
 
-  // One-time: Connect to chain API and load wallet
+  // Only connect to API if user has selected an account
   useEffect(() => {
     let unmounted = false;
-    (async () => {
+    if (!selectedAccount) {
+      setStatus('error');
+      setError('Please connect your wallet first.');
+      return;
+    }
+    (async (): Promise<void> => {
       setStatus('connecting');
       try {
-        // Enable extension but don't show "Connect Wallet" (we assume it is)
-        await web3Enable('Airdrop dApp');
-        const accs = await web3Accounts();
-        if (!accs.length) throw new Error('No accounts in Polkadot browser wallet.');
         const _api = await ApiPromise.create({ provider: new WsProvider(wsUrl) });
         await _api.isReady;
         if (unmounted) return;
-        setAccounts(accs);
-        setSelectedAccount(accs[0]);
         setApi(_api);
         setStatus('ready');
       } catch (e) {
-        setError('Failed to load extension or connect. Is Polkadot.js installed and account available?');
+        setError('Failed to connect.');
         setStatus('error');
       }
     })();
     return () => { unmounted = true; };
-  }, []);
+  }, [selectedAccount]);
 
   // Set up manager and update stats
   useEffect(() => {
@@ -153,16 +152,12 @@ export default function AirdropPanel() {
     <div className="flex mb-4 gap-2">
       <select
         value={selectedAccount ? selectedAccount.address : ''}
-        disabled={!accounts.length}
-        onChange={e => setSelectedAccount(accounts.find(acc => acc.address === e.target.value))}
+        disabled={true}
         className="rounded px-3 py-2 border border-[#5a48a9] text-base font-mono text-[#efeaff] bg-[#271e3e] w-full focus:outline-none focus:border-[#ff7bcd] shadow-sm"
-        style={{ minWidth: 0 }}
       >
-        {accounts.map(acc => (
-          <option value={acc.address} key={acc.address} className="bg-[#231537] text-pink-200">
-            {acc.meta.name || '(no name)'} - {acc.address.slice(0,8)}...
-          </option>
-        ))}
+        {selectedAccount && (
+          <option value={selectedAccount.address}>{selectedAccount.meta.name || selectedAccount.address}</option>
+        )}
       </select>
       <button
         disabled={!selectedAccount}

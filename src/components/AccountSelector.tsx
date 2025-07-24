@@ -8,9 +8,10 @@ interface AccountSelectorProps {
   selectedAccount: InjectedAccountWithMeta | null;
   setSelectedAccount: (account: InjectedAccountWithMeta | null) => void;
   balance: string;
+  walletName?: string;
 }
 
-const AccountSelector = ({ accounts, selectedAccount, setSelectedAccount, balance }: AccountSelectorProps) => {
+const AccountSelector = ({ accounts, selectedAccount, setSelectedAccount, balance, walletName }: AccountSelectorProps) => {
   
   // Safe balance formatting function
   const formatBalanceDisplay = (balanceValue: string): string => {
@@ -56,6 +57,9 @@ const AccountSelector = ({ accounts, selectedAccount, setSelectedAccount, balanc
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
+          {walletName && (
+            <div className="text-sm text-primary font-semibold">Connected Wallet: {walletName}</div>
+          )}
           <div>
             <label className="text-sm font-medium text-foreground">Select Account</label>
             <Select 
@@ -81,6 +85,12 @@ const AccountSelector = ({ accounts, selectedAccount, setSelectedAccount, balanc
                       </div>
                     </SelectItem>
                   ))
+                ) : selectedAccount ? (
+                  <SelectItem key={selectedAccount.address} value={selectedAccount.address} title={selectedAccount.address}>
+                    <div className="truncate">
+                      {selectedAccount.meta.name || `${selectedAccount.address.slice(0, 8)}...${selectedAccount.address.slice(-6)}`}
+                    </div>
+                  </SelectItem>
                 ) : (
                   <SelectItem value="no-accounts" disabled>
                     No accounts available

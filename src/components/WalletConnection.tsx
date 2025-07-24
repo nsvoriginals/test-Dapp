@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext, createContext, ReactNode, useMemo, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -18,13 +18,74 @@ const WALLET_ICONS: Record<string, JSX.Element> = {
 const POPULAR_WALLETS = [
   { name: 'polkadot-js', title: 'Polkadot.js' },
   { name: 'talisman', title: 'Talisman' },
-  { name: 'subwallet-js', title: 'SubWallet' }, // Fixed extension key
+  { name: 'subwallet-js', title: 'SubWallet' },
 ];
 
-// Function to check if a wallet extension is installed
+// Cache for wallet installation status
+const walletCache = new Map<string, boolean>();
+let cacheInitialized = false;
+
+// Initialize wallet cache immediately
+const initializeWalletCache = () => {
+  if (cacheInitialized || typeof window === 'undefined') return;
+  
+  POPULAR_WALLETS.forEach(wallet => {
+    walletCache.set(wallet.name, !!(window as any).injectedWeb3?.[wallet.name]);
+  });
+  cacheInitialized = true;
+};
+
+// Fast wallet check using cache
 const checkWalletInstalled = (walletName: string): boolean => {
-  if (typeof window === 'undefined') return false;
-  return !!(window as any).injectedWeb3?.[walletName];
+  if (!cacheInitialized) initializeWalletCache();
+  return walletCache.get(walletName) || false;
+};
+
+// Wallet context types
+export interface WalletContextType {
+  selectedWallet: any | null;
+  setSelectedWallet: (wallet: any | null) => void;
+  selectedAccount: InjectedAccountWithMeta | null;
+  setSelectedAccount: (account: InjectedAccountWithMeta | null) => void;
+  balance: string | null;
+  setBalance: (balance: string | null) => void;
+  disconnectWallet: () => void;
+}
+
+export const WalletContext = createContext<WalletContextType | undefined>(undefined);
+
+export const useWallet = () => {
+  const ctx = useContext(WalletContext);
+  if (!ctx) throw new Error('useWallet must be used within a WalletProvider');
+  return ctx;
+};
+
+export const WalletProvider = ({ children }: { children: ReactNode }) => {
+  const [selectedWallet, setSelectedWallet] = useState<any | null>(null);
+  const [selectedAccount, setSelectedAccount] = useState<InjectedAccountWithMeta | null>(null);
+  const [balance, setBalance] = useState<string | null>(null);
+
+  const disconnectWallet = useCallback(() => {
+    setSelectedAccount(null);
+    setSelectedWallet(null);
+    setBalance(null);
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    selectedWallet,
+    setSelectedWallet,
+    selectedAccount,
+    setSelectedAccount,
+    balance,
+    setBalance,
+    disconnectWallet
+  }), [selectedWallet, selectedAccount, balance, disconnectWallet]);
+
+  return (
+    <WalletContext.Provider value={contextValue}>
+      {children}
+    </WalletContext.Provider>
+  );
 };
 
 const WalletConnection = () => {
@@ -32,120 +93,154 @@ const WalletConnection = () => {
   const [step, setStep] = useState<'wallets' | 'accounts' | 'summary'>('wallets');
   const [installedWallets, setInstalledWallets] = useState<any[]>([]);
   const [accounts, setAccounts] = useState<InjectedAccountWithMeta[]>([]);
-  const [selectedWallet, setSelectedWallet] = useState<any | null>(null);
-  const [selectedAccount, setSelectedAccount] = useState<InjectedAccountWithMeta | null>(null);
-  const [balance, setBalance] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { apiState, api } = usePolkadotStore();
+  const { selectedWallet, setSelectedWallet, selectedAccount, setSelectedAccount, balance, setBalance, disconnectWallet } = useWallet();
+  
+  // Refs for optimization
+  const web3EnabledRef = useRef(false);
+  const balanceAbortControllerRef = useRef<AbortController | null>(null);
 
-  // Check for installed wallets when modal opens
+  // Pre-initialize wallet cache on component mount
+  useEffect(() => {
+    initializeWalletCache();
+  }, []);
+
+  // Optimized wallet checking - no delays, immediate response
   useEffect(() => {
     if (modalOpen && step === 'wallets') {
-      const checkInstalled = async () => {
-        try {
-          // Enable web3 extensions first
-          await web3Enable('Xorion Blockchain Explorer');
+      // Immediately check installed wallets from cache
+      const installed = POPULAR_WALLETS.filter(wallet => 
+        checkWalletInstalled(wallet.name)
+      ).map(wallet => ({
+        ...wallet,
+        installed: true
+      }));
+      
+      setInstalledWallets(installed);
+
+      // Enable web3 in background if not already done
+      if (!web3EnabledRef.current) {
+        web3Enable('Xorion Blockchain Explorer').then(() => {
+          web3EnabledRef.current = true;
+          // Re-check after enabling (in case some wallets weren't detected initially)
           setTimeout(() => {
-            const installed = POPULAR_WALLETS.filter(wallet => {
-              return checkWalletInstalled(wallet.name);
-            }).map(wallet => ({
+            const recheckInstalled = POPULAR_WALLETS.filter(wallet => 
+              checkWalletInstalled(wallet.name)
+            ).map(wallet => ({
               ...wallet,
               installed: true
             }));
-            setInstalledWallets(installed);
-          }, 100);
-        } catch (error) {
-          toast({
-            title: 'Error',
-            description: 'Failed to check for wallet extensions',
-            variant: 'destructive',
-          });
-        }
-      };
-
-      checkInstalled();
+            setInstalledWallets(recheckInstalled);
+          }, 50);
+        }).catch(() => {
+          // Silently handle error, wallets already shown from cache
+        });
+      }
     }
-  }, [modalOpen, step, toast]);
+  }, [modalOpen, step]);
 
-  // Fetch accounts for selected wallet
+  // Optimized account fetching
   useEffect(() => {
     if (step === 'accounts' && selectedWallet) {
       setLoading(true);
-      web3Accounts({ extensions: [selectedWallet.name] })
-        .then(accs => {
+      
+      // Use Promise.race to timeout after 3 seconds
+      const fetchPromise = web3Accounts({ extensions: [selectedWallet.name] });
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), 3000)
+      );
+
+      Promise.race([fetchPromise, timeoutPromise])
+        .then((accs: any) => {
           setAccounts(accs);
         })
-        .catch(error => {
+        .catch(() => {
           toast({
             title: 'Error',
-            description: 'Failed to fetch accounts from wallet',
+            description: 'Failed to fetch accounts. Please unlock your wallet.',
             variant: 'destructive',
           });
+          setAccounts([]);
         })
         .finally(() => setLoading(false));
     }
   }, [step, selectedWallet, toast]);
 
-  // Fetch balance for selected account
+  // Optimized balance fetching with abort controller
   useEffect(() => {
     if (api && apiState.status === 'connected' && selectedAccount && modalOpen) {
-      api.query.system.account(selectedAccount.address).then((info: any) => {
-        setBalance(info.data.free.toString());
-      }).catch((e: any) => {
-        toast({
-          title: 'Error fetching balance',
-          description: e.message,
-          variant: 'destructive',
-        });
-      });
-    } else if (!modalOpen) {
-      // Optionally clear balance when modal closes
-      // setBalance(null);
-    }
-  }, [api, apiState.status, selectedAccount, toast, modalOpen]);
+      // Cancel previous balance request
+      if (balanceAbortControllerRef.current) {
+        balanceAbortControllerRef.current.abort();
+      }
+      
+      balanceAbortControllerRef.current = new AbortController();
+      const signal = balanceAbortControllerRef.current.signal;
 
-  const handleWalletSelect = (wallet: any) => {
+      api.query.system.account(selectedAccount.address)
+        .then((info: any) => {
+          if (!signal.aborted) {
+            setBalance(info.data.free.toString());
+          }
+        })
+        .catch((e: any) => {
+          if (!signal.aborted) {
+            console.warn('Balance fetch failed:', e.message);
+            // Don't show toast for balance errors to avoid spam
+          }
+        });
+    }
+
+    return () => {
+      if (balanceAbortControllerRef.current) {
+        balanceAbortControllerRef.current.abort();
+      }
+    };
+  }, [api, apiState.status, selectedAccount, modalOpen]);
+
+  const handleWalletSelect = useCallback((wallet: any) => {
     setSelectedWallet(wallet);
     setStep('accounts');
-  };
+  }, [setSelectedWallet]);
 
-  const handleAccountSelect = (account: InjectedAccountWithMeta) => {
+  const handleAccountSelect = useCallback((account: InjectedAccountWithMeta) => {
     setSelectedAccount(account);
     setStep('summary');
     toast({
-      title: 'Account Connected',
-      description: `Connected to ${account.meta.name || 'Account'} from ${account.meta.source}`,
+      title: 'Connected',
+      description: `Connected to ${account.meta.name || 'Account'}`,
     });
-  };
+  }, [setSelectedAccount, toast]);
 
-  const handleDisconnect = () => {
-    setSelectedAccount(null);
-    setSelectedWallet(null);
+  const handleDisconnect = useCallback(() => {
+    disconnectWallet();
     setAccounts([]);
     setStep('wallets');
     setModalOpen(false);
     toast({
       title: 'Disconnected',
-      description: 'Wallet disconnected successfully',
+      description: 'Wallet disconnected',
     });
-  };
+  }, [disconnectWallet, toast]);
 
-  const handleSwitchAccount = () => {
+  const handleSwitchAccount = useCallback(() => {
     setStep('accounts');
-  };
+  }, []);
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = useCallback((text: string) => {
     navigator.clipboard.writeText(text);
     toast({
       title: 'Copied!',
       description: 'Address copied to clipboard',
     });
-  };
+  }, [toast]);
 
-  const formatShort = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
+  const formatShort = useCallback((address: string) => 
+    `${address.slice(0, 6)}...${address.slice(-4)}`, []);
 
-  const getNetworkName = () => {
+  const getNetworkName = useCallback(() => {
     if (!api) return 'Unknown';
     try {
       const chain = api.genesisHash?.toHex();
@@ -156,11 +251,22 @@ const WalletConnection = () => {
     } catch {
       return 'Unknown';
     }
-  };
+  }, [api]);
 
-  // Get non-installed popular wallets
-  const installedNames = installedWallets.map(wallet => wallet.name);
-  const notInstalled = POPULAR_WALLETS.filter(wallet => !installedNames.includes(wallet.name));
+  // Memoize expensive calculations
+  const { notInstalled, installedNames } = useMemo(() => {
+    const installedNames = installedWallets.map(wallet => wallet.name);
+    const notInstalled = POPULAR_WALLETS.filter(wallet => !installedNames.includes(wallet.name));
+    return { notInstalled, installedNames };
+  }, [installedWallets]);
+
+  const formattedBalance = useMemo(() => {
+    if (!balance) return null;
+    return (Number(balance) / 1e18).toLocaleString(undefined, { 
+      minimumFractionDigits: 4, 
+      maximumFractionDigits: 8 
+    });
+  }, [balance]);
 
   return (
     <>
@@ -299,11 +405,11 @@ const WalletConnection = () => {
                   </Button>
                 </div>
               </div>
-              {balance && (
+              {formattedBalance && (
                 <div>
                   <div className="text-sm text-muted-foreground mb-1">Balance</div>
                   <div className="text-lg font-bold text-white">
-                    {(Number(balance) / 1e18).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 8 })} tXOR
+                    {formattedBalance} tXOR
                   </div>
                 </div>
               )}

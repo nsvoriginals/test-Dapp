@@ -13,6 +13,7 @@ import AccountSelector from './AccountSelector';
 import StakingOverview from './StakingOverview';
 import StakingActions from './StakingActions';
 import DelegationDistributionChart from './DelegationDistributionChart';
+import { useWallet } from './WalletConnection';
 
 // Types
 interface Validator {
@@ -104,11 +105,7 @@ const formatBalanceForDisplay = (balance: string, decimals: number = 18): string
 const StakingInterface = () => {
   const { toast } = useToast();
   const { apiState, api } = usePolkadotStore();
-  
-  // Account State
-  const [accounts, setAccounts] = useState<InjectedAccountWithMeta[]>([]);
-  const [selectedAccount, setSelectedAccount] = useState<InjectedAccountWithMeta | null>(null);
-  const [balance, setBalance] = useState("0");
+  const { selectedAccount, selectedWallet } = useWallet();
   
   // Staking Data
   const [validators, setValidators] = useState<Validator[]>([]);
@@ -137,83 +134,25 @@ const StakingInterface = () => {
   const [isBonded, setIsBonded] = useState(false);
   const [stakingError, setStakingError] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [balance, setBalance] = useState("0");
 
   const apiConnected = !!api && apiState.status === 'connected';
 
-  // Initialize wallet extension
-  useEffect(() => {
-    const initWallet = async () => {
-      try {
-        await web3Enable("Xorion Staking App");
-        const allAccounts = await web3Accounts();
-        setAccounts(allAccounts);
-        if (allAccounts.length > 0) {
-          setSelectedAccount(allAccounts[0]);
-        }
-      } catch (error) {
-        console.error('Failed to initialize wallet:', error);
-        toast({
-          title: "Wallet Error",
-          description: "Failed to connect to wallet extension",
-          variant: "destructive"
-        });
-      }
-    };
-    
-    initWallet();
-  }, [toast]);
-
-  // Separate balance fetching function
+  // Only fetch balance if selectedAccount changes
   const fetchBalance = useCallback(async () => {
     if (!apiConnected || !selectedAccount) return;
-    
     try {
-      const accountInfo = await api.query.system.account(selectedAccount.address);
-      
-      console.log('=== BALANCE DEBUG ===');
-      console.log('Account info raw:', accountInfo.toString());
-      console.log('Account info human:', accountInfo.toHuman?.());
-      console.log('Account info JSON:', accountInfo.toJSON?.());
-      
-      let freeBalance = "0";
-      
-      // Multiple ways to extract balance
-      if (accountInfo && accountInfo.data && accountInfo.data.free) {
-        freeBalance = accountInfo.data.free.toString();
-        console.log('Method 1 - Raw balance:', freeBalance);
-      } else if (accountInfo.toJSON) {
-        const json = accountInfo.toJSON() as any;
-        if (json?.data?.free) {
-          freeBalance = json.data.free.toString();
-          console.log('Method 2 - JSON balance:', freeBalance);
-        }
-      } else if (accountInfo.toHuman) {
-        const human = accountInfo.toHuman() as any;
-        if (human?.data?.free) {
-          // Convert human readable back to raw
-          const humanBalance = human.data.free.toString().replace(/,/g, '');
-          if (humanBalance.includes(' ')) {
-            // Handle formatted balance like "1.234 kXOR"
-            const numPart = humanBalance.split(' ')[0];
-            freeBalance = parseBalance(numPart, 18);
-          } else {
-            freeBalance = parseBalance(humanBalance, 18);
-          }
-          console.log('Method 3 - Human balance:', humanBalance, '-> Raw:', freeBalance);
-        }
-      }
-      
-      const formattedBalance = formatBalanceForDisplay(freeBalance, 18);
-      console.log('Final formatted balance:', formattedBalance);
-      console.log('=== END BALANCE DEBUG ===');
-      
-      setBalance(formattedBalance);
-      
+      const accountInfo = await api.query.system.account(selectedAccount.address) as any;
+      setBalance(accountInfo.data.free.toString());
     } catch (error) {
-      console.error('Error fetching balance:', error);
-      setBalance("0");
+      console.error('Failed to fetch balance:', error);
+      toast({
+        title: "Wallet Error",
+        description: "Failed to fetch balance",
+        variant: "destructive"
+      });
     }
-  }, [api, apiConnected, selectedAccount]);
+  }, [apiConnected, selectedAccount, api, toast]);
 
   // Fetch validators
   const fetchValidators = useCallback(async () => {
@@ -795,10 +734,11 @@ const StakingInterface = () => {
 
         {/* Account Selection */}
         <AccountSelector
-          accounts={accounts}
+          accounts={[]} // No longer needed, use selectedAccount from context
           selectedAccount={selectedAccount}
-          setSelectedAccount={setSelectedAccount}
+          setSelectedAccount={() => {}} // No longer needed
           balance={balance}
+          walletName={selectedWallet?.title || selectedWallet?.name}
         />
 
         {/* Staking Overview */}
